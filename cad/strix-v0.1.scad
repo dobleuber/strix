@@ -15,9 +15,10 @@ $fn = 72;
 /* [View] */
 pan           = 30;     // head pan (degrees, limit +-170)
 tilt          = 12;     // elevation (degrees, -15 .. +35)
-show_launcher = true;   // false = sensor-only head (phase 1)
+show_launcher = false;  // true = head with the foam-dart launcher (phase 2)
 show_rail     = false;  // true  = rail module (phase 3)
 rail_pos      = -110;   // carriage position along the rail
+head_style    = "cyclops";  // cyclops (chosen) | box | owl | binoc | dome (early studies)
 explode       = 0;      // 0 = assembled, 1 = exploded
 cutaway       = false;  // lengthwise section through the housings (use with pan=0)
 
@@ -64,7 +65,7 @@ z_top  = z_tt + tt_t;
 z_tilt = z_top + tilt_h;
 
 echo(str("PAN: centre distance = ", pan_c, " mm, reduction ", t_big / t_small, ":1"));
-echo(str("HEIGHT of tilt axis = ", z_tilt + foot_h, " mm; overall height approx = ", z_tilt + 70 + foot_h, " mm"));
+echo(str("HEIGHT: tilt axis ", z_tilt + foot_h, " mm, head top ", z_tilt + 41 + foot_h, " mm, magazine top ", z_tilt + 70 + foot_h, " mm, antenna tip ", z_tilt + 87.5 + foot_h, " mm"));
 echo(str("RAIL: usable travel approx = ", rail_len - base_d - 40, " mm"));
 
 C_PRINT = "#e8792b";  C_PRINT2 = "#3a3f47";  C_WOOD = "#d9b98a";
@@ -228,6 +229,11 @@ module cradle_launcher() {
     // trunnions
     color(C_PRINT) cutY() for (s = [-1, 1]) translate([0, s * (cr_w / 2 + 4), 0]) rotate([90, 0, 0]) cylinder(d = 7.6, h = 10, center = true);
     eye(x1, 13);
+    launcher_guts();
+}
+
+// launcher mechanism, shared by every head that can carry it
+module launcher_guts() {
     // barrel
     color(C_PRINT2) cutY() translate([64, 0, -18]) rotate([0, 90, 0]) tube(20, 14, 22);
     // flywheels + 130-size motors
@@ -258,14 +264,138 @@ module cradle_sensor() {
     eye(x1, 0);
 }
 
+// ---------------- character heads (styling studies) ----------------
+C_GLASS = "#15181c";  C_GLOW = "#ffd27a";  C_LIGHT = "#eceff2";
+
+// box rounded around the X axis
+module rbox(x0, x1, w, z0, z1, r) {
+    translate([x0, 0, 0]) rotate([90, 0, 90]) linear_extrude(x1 - x0)
+        translate([0, (z0 + z1) / 2]) offset(r = r) square([w - 2 * r, z1 - z0 - 2 * r], center = true);
+}
+module trunnions(y = cr_w / 2 + 4, len = 10) {
+    color(C_PRINT2) cutY() for (s = [-1, 1]) translate([0, s * y, 0]) rotate([90, 0, 0]) cylinder(d = 7.6, h = len, center = true);
+}
+// eye facing +X: bezel, glass, glowing iris ring, pupil (camera lens or sensor)
+module eye_unit(d, pupil = 12) {
+    color(C_PRINT2) rotate([0, 90, 0]) cylinder(d = d, h = 4);
+    color(C_GLASS) translate([3, 0, 0]) rotate([0, 90, 0]) cylinder(d = d - 6, h = 2);
+    color(C_GLOW) translate([4.5, 0, 0]) rotate([0, 90, 0]) tube(d - 10, d - 17, 1.2);
+    color(C_BLACK) translate([4, 0, 0]) rotate([0, 90, 0]) cylinder(d = pupil, h = 4);
+}
+
+// A. Owl: two big eyes, a servo-driven brow, ear tufts, beak
+module head_owl() {
+    x0 = -42; x1 = 44;
+    color(C_PRINT) cutY() difference() {
+        rbox(x0, x1, cr_w, -30, 40, 16);
+        rbox(x0 + 2.4, x1 - 2.4, cr_w - 4.8, -27.6, 37.6, 14);
+    }
+    trunnions();
+    color(C_LIGHT) rbox(x1, x1 + 1.6, 70, -22, 34, 14);                      // face plate
+    for (s = [-1, 1]) translate([x1 + 1.6, s * 18, 9]) eye_unit(32);
+    for (s = [-1, 1]) color(C_PRINT2) translate([x1 + 1.6, s * 18, 29])      // brow (one servo tilts both)
+        rotate([s * 16, 0, 0]) translate([0, -18, -3]) cube([8, 36, 6]);
+    for (s = [-1, 1]) color(C_PRINT2) translate([-12, s * 27, 38])           // ear tufts
+        rotate([-s * 12, 0, 0]) hull() { translate([0, -8, 0]) cube([28, 16, 1]); translate([9, -1.5, 22]) cube([8, 3, 1]); }
+    color(C_DART) translate([x1 + 1.6, 0, -10]) hull() {                     // beak (launcher muzzle later)
+        translate([0, -7, 4]) cube([1, 14, 1]); translate([10, -1, -3]) cube([1, 2, 1]); translate([0, -3, -8]) cube([1, 6, 1]);
+    }
+}
+
+// B. Binocular: two eye pods on a slim neck block, each with its own eyelid
+module head_binoc() {
+    color(C_PRINT2) cutY() rbox(-20, 20, cr_w, -14, 12, 8);                  // trunnion block (Pi Zero inside)
+    trunnions();
+    color(C_PRINT2) translate([-10, -7, 10]) cube([34, 14, 16]);             // bridge
+    for (s = [-1, 1]) translate([0, s * 20, 33]) rotate([-s * 9, 0, 0]) {
+        color(C_PRINT) translate([-28, 0, 0]) rotate([0, 90, 0]) linear_extrude(76)
+            hull() { translate([0, s * 3]) circle(d = 34); translate([0, -s * 3]) circle(d = 30); }
+        color(C_GLASS) translate([48, 0, 0]) rotate([0, 90, 0]) linear_extrude(1.5)
+            hull() { translate([0, s * 3]) circle(d = 29); translate([0, -s * 3]) circle(d = 25); }
+        color(C_GLOW) translate([49.4, s * 1, 0]) rotate([0, 90, 0]) tube(20, 14, 1);
+        color(C_BLACK) translate([49, s * 1, 0]) rotate([0, 90, 0]) cylinder(d = 10, h = 3);
+        color(C_PRINT2) translate([40, 0, 0]) intersection() {                // eyelid / hood
+            rotate([0, 90, 0]) linear_extrude(16) hull() { translate([0, s * 3]) circle(d = 38); translate([0, -s * 3]) circle(d = 34); }
+            translate([-1, -30, 7]) cube([20, 60, 20]);
+        }
+    }
+}
+
+// C. Cyclops (the chosen head): one large eye whose pupil is the camera, with
+// upper and lower shutters, an antenna and a speaker grille. The Pi Zero 2 and
+// its camera live inside. With show_launcher the body grows a jaw for the
+// flywheels and the muzzle replaces the grille.
+module cyclops_body(x0, x1, wb, z0, i = 0) {
+    hull() {
+        translate([x0 + i, -(wb - i), z0 + i]) cube([x1 - x0 - 2 * i, 2 * (wb - i), 1]);
+        translate([x0 + i, -(40 - i), 20]) cube([x1 - x0 - 2 * i, 2 * (40 - i), 1]);
+        translate([x0 + 4 + i, -(36 - i), 40 - i]) cube([x1 - x0 - 8 - 2 * i, 2 * (36 - i), 1]);
+    }
+}
+module cyclops_eye(d) {
+    eye_unit(d, d * 0.32);
+    color(C_PRINT2) intersection() { rotate([0, 90, 0]) cylinder(d = d + 2, h = 9); translate([-1, -d, 0.22 * d]) cube([12, 2 * d, d]); }
+    color(C_PRINT2) intersection() { rotate([0, 90, 0]) cylinder(d = d + 2, h = 9); translate([-1, -d, -1.36 * d]) cube([12, 2 * d, d]); }
+}
+module head_cyclops() {
+    L = show_launcher;
+    x0 = L ? -62 : -40;   x1 = L ? 78 : 42;
+    wb = L ? 38 : 29;     z0 = L ? -32 : -30;      // half width and height of the underside
+    eye_d = L ? 40 : 50;  eye_z = L ? 17 : 7;
+    color(C_PRINT) cutY() difference() {
+        cyclops_body(x0, x1, wb, z0);
+        cyclops_body(x0, x1, wb, z0, 2.4);
+        translate([x1 - 6, 0, eye_z]) rotate([0, 90, 0]) cylinder(d = 16, h = 12);            // lens
+        if (L) {
+            translate([x1 - 6, 0, -18]) rotate([0, 90, 0]) cylinder(d = 15, h = 12);          // muzzle
+            translate([-42, -9.5, 0]) cube([79, 19, 60]);                                     // magazine well
+        }
+    }
+    if (L) trunnions(); else trunnions(38, 16);
+    color(C_LIGHT) translate([x1 - 3, -37, 33]) cube([1.2, 74, 4]);                           // accent stripe
+    translate([x1, 0, eye_z]) cyclops_eye(eye_d);
+    // Pi camera behind the pupil, Pi Zero 2 inside the head
+    color(C_PCB) translate([x1 - 10, -12.5, eye_z - 12]) cube([1.6, 25, 24]);
+    if (L) color(C_PCB) translate([-36, 28, 2]) cube([65, 1.6, 30]);
+    else   color(C_PCB) translate([8, -32.5, 6]) cube([1.6, 65, 30]);
+    if (L) launcher_guts();
+    else color(C_BLACK) for (i = [-2 : 2]) translate([x1 - 0.5, i * 7 - 2, -28]) cube([1.5, 4, 7]);   // grille
+    color(C_METAL) translate([x0 + 18, 24, 41]) cylinder(d = 3, h = 40);
+    color(C_GLOW) translate([x0 + 18, 24, 83]) sphere(d = 9);
+}
+
+// D. Dome: sits straight on the turntable (no yoke); only the eye module tilts
+module head_dome() {
+    r = 52; h = 24;
+    color(C_LIGHT) cutY() difference() {
+        union() { cylinder(r = r, h = h); translate([0, 0, h]) intersection() { sphere(r = r); translate([-r, -r, 0]) cube([2 * r, 2 * r, r]); } }
+        translate([0, 0, -1]) cylinder(r = r - 2.4, h = h + 1.01);
+        translate([0, 0, h]) sphere(r = r - 2.4);
+        translate([r - 16, -14, 16]) cube([24, 28, 36]);                     // eye slot
+    }
+    color(C_PRINT) translate([0, 0, 3]) tube(2 * r + 1.2, 2 * r - 0.4, 6);
+    color(C_PRINT) translate([0, 0, h - 4]) tube(2 * r + 1.2, 2 * r - 0.4, 2.5);
+    color(C_PRINT) translate([0, 0, h]) intersection() {                     // dome panels
+        difference() { sphere(r = r + 0.6); sphere(r = r - 0.2); }
+        for (a = [70, 180, 290]) rotate([0, 0, a]) linear_extrude(60) polygon([[6, 0], [60, -15], [60, 15]]);
+        translate([-60, -60, 24]) cube([120, 120, 40]);
+    }
+    translate([18, 0, 34]) rotate([0, -tilt, 0]) {                           // tilting eye module
+        color(C_PRINT2) translate([6, -12, -12]) cube([30, 24, 24]);
+        translate([36, 0, 0]) eye_unit(22, 10);
+    }
+    for (a = [-38, 38]) color(a < 0 ? "#3aa0ff" : C_GLOW) rotate([0, 0, a]) translate([r - 0.5, 0, 13]) rotate([0, 90, 0]) cylinder(d = 9, h = 2);
+    color(C_METAL) translate([-20, -18, h + 40]) cylinder(d = 6, h = 24);     // periscope
+    color(C_PRINT2) translate([-25, -23, h + 64]) cube([14, 10, 8]);
+}
+
 // ============================ ELECTRONICS ============================
 module electronics() {
-    // brain (Raspberry Pi 4/5 or similar)
-    color(C_PCB) translate([4, -42.5, plate_t + 5]) cube([56, 85, 2]);
-    color(C_METAL) translate([8, 22, plate_t + 7]) cube([48, 18, 14]);
-    // motor controller (ESP32 + 2 TMC2209 drivers), stacked on top
-    color("#1f6f8b") translate([8, -32, plate_t + 27]) cube([48, 64, 2]);
-    color(C_BLACK) for (dy = [-20, 4]) translate([16, dy, plate_t + 29]) cube([15, 20, 10]);
+    // motor controller: carrier board with a Raspberry Pi Pico and 2 stepper drivers
+    // (the brain, a Pi Zero 2, sits in the head next to its camera)
+    color("#1f6f8b") translate([8, -32, plate_t + 6]) cube([48, 64, 2]);
+    color(C_PCB) translate([36, -25.5, plate_t + 10]) cube([21, 51, 2]);
+    color(C_BLACK) for (dy = [-24, 4]) translate([13, dy, plate_t + 8]) cube([15, 20, 12]);
     // 12 V -> 5 V buck converter
     color("#7a3fa0") translate([-38, 42, plate_t + 3]) cube([45, 22, 14]);
 }
@@ -326,9 +456,16 @@ module robot() {
     translate([0, 0, 62 * e]) turret_ring();
     rotate([0, 0, pan]) {
         translate([0, 0, 105 * e]) turntable();
-        translate([0, 0, 125 * e]) yoke();
-        translate([0, 0, z_tilt + 175 * e]) rotate([0, -tilt, 0])
-            if (show_launcher) cradle_launcher(); else cradle_sensor();
+        if (head_style == "dome") translate([0, 0, z_top + 150 * e]) head_dome();
+        else {
+            translate([0, 0, 125 * e]) yoke();
+            translate([0, 0, z_tilt + 175 * e]) rotate([0, -tilt, 0])
+                if (head_style == "owl") head_owl();
+                else if (head_style == "binoc") head_binoc();
+                else if (head_style == "cyclops") head_cyclops();
+                else if (show_launcher) cradle_launcher();
+                else cradle_sensor();
+        }
     }
 }
 
