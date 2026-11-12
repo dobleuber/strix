@@ -25,8 +25,9 @@ payload (camera, sensors, foam-dart launcher) and a base that is ready to ride a
 - **Base (fixed):** pan motor, electronics and power. Flat plates for laser cutting.
 - **Turntable:** an 80-tooth pulley printed as one part, riding on a 6806 bearing
   over a hollow spigot that lets the cables through (Ø 20 mm bore).
-- **Head:** a cyclops. Its single eye has a camera for a pupil, a glowing iris and two
-  shutters that blink and squint. It tilts between two arms and is a swappable module.
+- **Head:** a cyclops. A rounded pod with a single eye on a short barrel: a camera for
+  a pupil, a glowing iris and two shutters that blink and squint. It tilts between two
+  arms and is a swappable module.
 - **Rail:** a separate module. The robot bolts to the carriage through the four
   M4 holes (100 mm square) that otherwise hold its rubber feet.
 
@@ -50,7 +51,8 @@ as they are for both the pan drive and the rail; the model is sized around them.
 ## Phases
 
 1. Base, pan and tilt with the sensor head (the default view above).
-2. Launcher head: the same face with a jaw for the flywheels and a magazine on top.
+2. Launcher head: the same face on a longer pod, with a flatter belly for the flywheels,
+   the muzzle under the eye and a magazine on top.
 3. Rail.
 
 | Launcher head | Exploded view | On the rail |
@@ -59,8 +61,8 @@ as they are for both the pan drive and the rail; the model is sized around them.
 
 ### Head studies
 
-Four heads were sketched on the same base before settling on the cyclops. The
-others are still in the model (`head_style`).
+Four heads were sketched on the same base before settling on the cyclops, which
+was then rounded into the pod above. The others are still in the model (`head_style`).
 
 ![Head options](docs/img/head-options.png)
 
