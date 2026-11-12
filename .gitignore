@@ -1,0 +1,10 @@
+# OpenSCAD outputs
+*.stl
+*.3mf
+/out/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
