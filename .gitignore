@@ -1,5 +1,5 @@
 # OpenSCAD outputs
-*.stl
+/out/*.stl
 *.3mf
 /out/
 
