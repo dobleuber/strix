@@ -181,11 +181,3 @@ head and the rail, which have not been turned into printable parts.
 openscad cad/strix-v0.1.scad -o out/launcher.png -D show_launcher=true
 openscad cad/strix-v0.1.scad -o out/rail.png     -D show_rail=true
 ```
-
-### Head studies
-
-Four heads were sketched on the same base before settling on the cyclops, which
-was then rounded into the pod above. The others are still in the concept model
-(`head_style`).
-
-![Head options](docs/img/head-options.png)
