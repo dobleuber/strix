@@ -21,6 +21,7 @@ part    = "assembly";  // assembly | plate | shell | deck | cap | turntable | re
 pan     = 0;
 tilt    = 0;
 cutaway = false;       // section through the assembly
+as_built = false;      // true: emit a single part where it sits in the assembly, not in print pose
 
 /* [Fits - tune with the gauge part] */
 tol          = 0.2;          // general sliding clearance
@@ -536,8 +537,21 @@ module assembly() {
     }
 }
 
+// a single part in its own frame (base and turntable frame, or head frame)
+module raw(p) {
+    if (p == "plate") plate();            else if (p == "shell") shell();
+    else if (p == "deck") deck();         else if (p == "cap") cap();
+    else if (p == "ring") ring();         else if (p == "port_plug") port_plug();
+    else if (p == "turntable") turntable(); else if (p == "retainer") retainer();
+    else if (p == "arm_servo") arm(true); else if (p == "arm_idle") arm(false);
+    else if (p == "head_rear") head_rear(); else if (p == "head_front") head_front();
+    else if (p == "iris") iris();         else if (p == "bezel") bezel();
+    else if (p == "sled") sled();         else if (p == "spacer") spacer();
+}
+
 // ============================ PRINT POSES ============================
-if (part == "assembly") {
+if (as_built) raw(part);
+else if (part == "assembly") {
     if (cutaway) difference() { assembly(); translate([-500, -1000, -500]) cube(1000); }
     else assembly();
 }

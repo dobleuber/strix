@@ -147,6 +147,28 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 The stepper motors from an Ender 3 (NEMA17 42-34 with a 20-tooth pulley) work as
 they are for both the pan drive and the rail.
 
+## Dynamics
+
+`sim/dynamics.py` integrates mass, centre of mass and inertia over the printable
+meshes, adds the bought components as point masses and prints the margins:
+
+```bash
+python3 sim/dynamics.py
+```
+
+| | |
+|---|---|
+| Head | 122 g, centre of mass 10 mm ahead of the tilt axis |
+| Rotating mass / whole robot | 251 g / about 0.9 kg |
+| Pan inertia | 4.4 × 10⁻⁴ kg·m² including the reflected rotor |
+| Pan acceleration available | about 105 000 °/s² (3 000 is plenty) |
+| Tilt gravity torque, worst case | 14.6 mN·m against 180 mN·m of servo stall |
+| 90° move / 330° unwind | 0.37 s / 1.04 s at 360 °/s and 3 000 °/s² |
+
+The mechanics have a wide margin, so tracking quality is set by the vision loop
+(frame rate and latency), not by the motor. The motor torque (0.2 N·m usable),
+fill factors and component masses are assumptions listed at the top of the script.
+
 ## Known unknowns
 
 These are assumptions built into the printable parts. Check each against the
