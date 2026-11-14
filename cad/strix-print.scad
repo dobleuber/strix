@@ -21,6 +21,7 @@ part    = "assembly";  // assembly | plate | shell | deck | cap | turntable | re
 pan     = 0;
 tilt    = 0;
 cutaway = false;       // section through the assembly
+show_cables = true;    // draw the wiring runs in the assembly
 as_built = false;      // true: emit a single part where it sits in the assembly, not in print pose
 
 /* [Fits - tune with the gauge part] */
@@ -157,6 +158,8 @@ module plate() {
             for (p = proto_holes) translate([p[0], p[1], 0]) cylinder(d = 6.5, h = plate_t + proto_so, $fn = 32);
             // rim that locates the buck converter (held by a zip tie)
             translate([-43, -60, 0]) difference() { cube([46, 24, plate_t + 2]); translate([1.2, 1.2, plate_t]) cube([43.6, 21.6, 3]); }
+            // tie bar: anchors the bundle that comes down the hollow axis, so the twist stays in the bore
+            translate([-12, -9, 0]) { cube([4, 4, plate_t + 7]); translate([0, 14, 0]) cube([4, 4, plate_t + 7]); translate([0, 0, plate_t + 4]) cube([4, 18, 3]); }
         }
         for (a = boss_angles) rotate(a) translate([boss_r, 0, -1]) hole(clr_m3, plate_t + 2);
         for (sx = [-1, 1], sy = [-1, 1]) translate([sx * mount_sq / 2, sy * mount_sq / 2, -1]) hole(4.4, plate_t + 2);
@@ -258,6 +261,7 @@ module turntable() {
         translate([0, 0, zd]) cylinder(d = brg[1] - 3.6, h = 10);                           // lip under the outer race
         for (a = [60, 180, 300]) rotate(a) translate([26.5, 0, z_top]) ins_down([ins_m3[0], tt_t + 0.5]);
         for (sx = [-1, 1], sy = [-1, 1]) translate([sx * 16, sy * (arm_y + arm_t + 6), z_top]) ins_down([ins_m3[0], tt_t + 1]);
+        for (d = [-1, 1]) translate([-24 + d * 3.5, 34 + d * 1.9, z_tt - 1]) hole(3.2, tt_t + 2);           // zip tie for the servo lead
         // reach the motor screws through the disc with the head turned to pan = 180
         for (sx = [-1, 1], sy = [-1, 1]) hull() for (dx = [-3, 4])
             translate([pan_c + sx * nema_hole / 2 + dx, sy * nema_hole / 2, z_tt - 1]) hole(6.5, tt_t + 2);
@@ -306,6 +310,7 @@ module arm(servo) {
         if (servo) {
             translate([xc - servo_len / 2 - tol, yi - 1, z_tilt - servo_w / 2 - tol]) cube([servo_len + 2 * tol, arm_t + 2, servo_w + 2 * tol]);
             for (d = [-1, 1]) translate([xc + d * servo_ear_pitch / 2, yi - 1, z_tilt]) rotate([-90, 0, 0]) hole(pilot_m2, arm_t + 2);
+            for (z = [22, 40], dx = [-10, -2]) translate([dx - 1, yi - 1, z_top + z - 2]) cube([2, arm_t + 2, 4]);   // zip ties for the servo lead
         } else {
             translate([0, yi + 0.01, z_tilt]) rotate([90, 0, 0]) hole(axle_brg[1] + 0.1, axle_brg[2] + 0.1);
             translate([0, yi, z_tilt]) rotate([90, 0, 0]) hole(6.5, arm_t + 1);
@@ -355,6 +360,7 @@ module head_rear() {
                         translate([1.2, s * 13 - 4.5, p_z0 + hwall - 1]) cube([0.2, 9, 1.2]);
                     }
                     translate([-14, 0, 28]) cylinder(d = 8, h = 14, $fn = 32);                              // antenna socket
+                    translate([-24, -1.5, p_z0]) cube([10, 3, 16]);                                         // strain-relief rib for the harness
                     rails();
                 }
             }
@@ -374,6 +380,7 @@ module head_rear() {
         translate([hseam - tongue_len / 2, 0, 30]) hole(clr_m3, 20);                                         // top seam screw
         translate([-6, 0, p_z0 - 5]) cylinder(d = 14, h = 12);                                               // cables down to the hollow axis
         translate([-14, 0, 29]) hole(3.2, 20);                                                               // 3 mm antenna rod
+        translate([-21, -5, -18.5]) cube([4, 10, 2.2]);                                                      // zip tie through the rib
     }
 }
 
@@ -510,6 +517,20 @@ module v_camera() eye_frame(hx1) color(C_PCB) {
     color(C_BLACK) translate([-4, -4, -4.5]) cube([8, 8, 5]);
 }
 
+// wiring runs, for the drawings only
+function hd(p) = [p[0] * cos(tilt) - p[2] * sin(tilt), p[1], p[0] * sin(tilt) + p[2] * cos(tilt) + z_tilt];   // head frame -> turntable frame
+module wire(pts, d) { for (i = [0 : len(pts) - 2]) hull() { translate(pts[i]) sphere(d = d, $fn = 12); translate(pts[i + 1]) sphere(d = d, $fn = 12); } }
+C_HARNESS = "#d7263d";  C_LEAD = "#f2c14e";
+// head harness (5 V, GND, TX, RX): Pi header -> hole under the head -> slack loop -> hollow axis
+module v_harness_pan() color(C_HARNESS) wire([hd([0, 8, 19]), hd([-10, 5, -6]), hd([-6, 2, -22]), hd([-6, 2, -32]),
+    [-20, 2, z_top + 20], [-9, 2, z_top + 7], [0, 2, z_top + 2], [0, 2, zd - 2], [0, 2, z_deck - 5]], 3.2);
+module v_harness_base() color(C_HARNESS) wire([[0, 2, z_deck - 5], [-8, 2, plate_t + 9], [12, 4, plate_t + proto_so + 5]], 3.2);
+// tilt servo lead: down the outside of the arm, round its back edge, across the turntable, down the axis
+module v_lead_pan() color(C_LEAD) wire([[-14, arm_y + arm_t + 16, z_tilt - 5], [-8, arm_y + arm_t + 3, z_tilt - 14], [-6, arm_y + arm_t + 1.5, z_top + 40],
+    [-6, arm_y + arm_t + 1.5, z_top + 22], [-29, arm_y + arm_t + 1, z_top + 21], [-31, arm_y - 2, z_top + 3], [-24, 34, z_top + 1.5],
+    [-8, 11, z_top + 4], [0, 6, z_top + 2], [0, 6, zd - 2], [0, 6, z_deck - 5]], 2.6);
+module v_lead_base() color(C_LEAD) wire([[0, 6, z_deck - 5], [-8, 6, plate_t + 9], [12, 12, plate_t + proto_so + 5]], 2.6);
+
 // ============================== ASSEMBLY ==============================
 module assembly() {
     color(C_DARK) plate();
@@ -519,7 +540,9 @@ module assembly() {
     color(C_DARK) cap();
     color(C_DARK) ring();
     v_nema(); v_belt(); v_bearing(); v_switch(); v_proto();
+    if (show_cables) { v_harness_base(); v_lead_base(); }
     rotate(pan) {
+        if (show_cables) { v_harness_pan(); v_lead_pan(); }
         color(C_PRINT) turntable();
         color(C_DARK) retainer();
         color(C_PRINT) arm(true);

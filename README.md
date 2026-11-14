@@ -114,6 +114,11 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 | 5 mm LED | 6 | Iris |
 | 3 mm rod, about 60 mm | 1 | Antenna |
 | Rubber feet, M4 or stick-on | 4 | Under the plate |
+| Silicone wire, 24 AWG (power) and 28 AWG (signal) | ~0.5 m each | Head harness |
+| Servo extension lead, 30 cm | 1 | Tilt servo to the protoboard |
+| 4-pin connector pair (JST-XH or similar) | 1 | So the head can be unplugged |
+| Small zip ties | 8 | Cable anchors |
+| NPN transistor and 6 resistors | 1 set | Iris LEDs |
 
 ### Assembly order
 
@@ -133,6 +138,9 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 9. Screw the servo horn into the recess on the head. Hold the head between the
    arms, push the servo through its arm into the horn and fit the axle screw with
    its spacer on the other side.
+10. Run the servo lead down the arm and across the turntable, and the head harness
+    out of the hole under the head, and feed both down the hollow axis. Tie them
+    at each anchor, leaving the slack described under Wiring.
 
 ## Electronics
 
@@ -140,12 +148,77 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 |---|---|---|
 | Raspberry Pi Zero 2 | Head | Brain: vision and behaviour |
 | Raspberry Pi camera (CSI) | Head, behind the pupil | Vision. The ribbon stays short and never crosses a rotating joint |
-| Raspberry Pi Pico | Base | Step generation for both steppers, servos, sensors, LEDs |
+| Raspberry Pi Pico | Base | Step generation for both steppers, the tilt servo, the homing switches |
 | 2 × stepper driver (TMC2209 or A4988) | Base | Pan and rail motors |
 | 12–24 V supply + 5 V buck (~3 A) | Base | Motors on the high rail; Pi, Pico and servos on 5 V |
 
 The stepper motors from an Ender 3 (NEMA17 42-34 with a 20-tooth pulley) work as
 they are for both the pan drive and the rail.
+
+## Wiring
+
+Seven wires cross the pan axis and four of them go on into the head. Nothing else
+connects the moving parts to the base.
+
+![Wiring runs](docs/img/wiring.png)
+
+```mermaid
+flowchart LR
+  subgraph HEAD[Head, tilts]
+    CAM[Pi camera] -- CSI ribbon --> PI[Pi Zero 2]
+    PI -- GPIO18 + transistor --> LED[6 iris LEDs]
+  end
+  subgraph YOKE[Turntable, pans]
+    SERVO[Tilt servo]
+  end
+  subgraph BASE[Base, fixed]
+    JACK[DC jack 12-24 V] --> SW[Switch] --> BUCK[Buck 5 V]
+    SW --> DRV[2 stepper drivers]
+    PICO[Pico] -- step / dir / enable --> DRV --> MOT[Pan motor, rail motor]
+    HOME[Homing switch] --> PICO
+    BUCK --> PICO
+  end
+  BUCK == 5 V, GND ==> PI
+  PICO <== UART TX / RX ==> PI
+  BUCK == 5 V, GND ==> SERVO
+  PICO == PWM ==> SERVO
+```
+
+| Run | Wires | Path | What it has to survive |
+|---|---|---|---|
+| Head harness (red) | 5 V, GND, TX, RX | Pi header → hole under the head → slack loop → down the hollow axis → tie bar on the plate → protoboard | Bending with the tilt (the loop) and ±165° of twist (inside the bore) |
+| Servo lead (yellow) | 5 V, GND, signal | Down the outside of the servo arm → round its back edge → across the turntable → down the hollow axis → tie bar → protoboard | Twist only: it rides on the turntable |
+| Camera ribbon | CSI | Iris plate → Pi, inside the head | Nothing: no joint in between |
+
+Anchor every run on both sides of a joint so the movement is taken by free cable
+and not by a solder joint. The parts have a place for each tie:
+
+- a rib with a slot behind the cable hole inside `head_rear`,
+- two pairs of slots down `arm_servo` and one pair of holes in `turntable`,
+- a tie bar on `plate`, straight under the spigot.
+
+Leave about 30 mm of slack between the head and the turntable, and about 60 mm
+of free length inside the bore.
+
+### Pins (proposed)
+
+| Signal | Pico | Pi Zero 2 |
+|---|---|---|
+| Serial, Pico → Pi | GP0 (UART0 TX) | GPIO15 / RXD, pin 10 |
+| Serial, Pi → Pico | GP1 (UART0 RX) | GPIO14 / TXD, pin 8 |
+| 5 V in | VSYS, pin 39 | 5 V, pin 2 or 4 |
+| Ground | any GND | GND, pin 6 |
+| Pan driver STEP / DIR / EN | GP2 / GP3 / GP4 | |
+| Rail driver STEP / DIR / EN | GP6 / GP7 / GP8 | |
+| Pan homing switch (to GND) | GP10 | |
+| Rail endstop (to GND) | GP11 | |
+| Tilt servo signal | GP15 | |
+| Iris LEDs | | GPIO18, pin 12, through a transistor |
+
+Both boards use 3.3 V logic, so the serial link needs no level shifter. Feed the
+servo and the Pi straight from the buck converter, not through each other: a
+stalled servo can pull enough current to reset the Pi. The six LEDs together draw
+more than a GPIO pin should supply, hence the transistor.
 
 ## Dynamics
 
