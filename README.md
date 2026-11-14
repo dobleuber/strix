@@ -36,8 +36,10 @@ leaves room for a slip ring if continuous rotation is wanted later.
 - **Pan stage:** the deck carries a hollow spigot. A 6806 bearing sits on it and
   drops into the turntable, whose rim is an 80-tooth GT2 pulley. The NEMA17 hangs
   under the deck on slots, so sliding it tensions the belt.
-- **Yoke:** two arms bolted to the turntable. One holds the tilt servo, the other a
-  small bearing for the axle screw.
+- **Yoke:** two arms bolted to the turntable. One holds the tilt servo; the other
+  carries a hollow trunnion, so the head's wiring leaves through the tilt axis.
+- **Covers:** a shell over each arm and a low cover on the turntable. With them on,
+  no cable, connector or servo is in sight.
 - **Head:** a rounded pod in two halves that print standing on their seam. One eye:
   the pupil is the camera, the iris is a ring of LEDs behind a thin printed skin.
   The Pi Zero 2 rides on a sled that slides into rails inside the rear half.
@@ -59,11 +61,14 @@ leaves room for a slip ring if continuous rotation is wanted later.
 | `turntable` | 1 | Disc down, pulley up. Slow outer walls help the teeth |
 | `retainer` | 1 | Flange down. Holds the outer race |
 | `arm_servo`, `arm_idle` | 1 each | Flat, inner face down |
+| `cover_servo`, `cover_idle` | 1 each | Outer face down. Mirror images of each other |
+| `turntable_cover` | 1 | Top face down |
+| `trunnion` | 1 | Flange down. Hollow tilt axle that the head harness runs through |
 | `head_rear`, `head_front` | 1 each | Standing on the seam, no supports. Use a brim |
 | `iris` | 1 | White or translucent filament, front face down |
 | `bezel` | 1 | Dark filament, front face down |
 | `sled` | 1 | Pi Zero 2 tray |
-| `spacer` | 1 | Axle spacer |
+| `spacer` | 1 | Ring between the head and the idle arm |
 | `port_plug` | 1 | Closes the rail connector hole for now |
 
 Everything fits a 180 × 180 mm bed. PETG is the safer choice for the deck,
@@ -91,21 +96,20 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 
 | Item | Qty | Where |
 |---|---|---|
-| M3 heat-set insert | 21 | Shell 10, turntable 7, head 4 |
+| M3 heat-set insert | 26 | Shell 10, turntable 9, arms 4, head 3 |
 | M2.5 heat-set insert | 4 | Pi Zero 2 sled |
 | M2 heat-set insert | 11 | Protoboard 4, camera 4, iris plate 3 |
 | M3 × 12 | 5 | Ring + deck into the shell |
-| M3 × 8 | 8 | Plate into the shell 5, retainer 3 |
+| M3 × 8 | 12 | Plate into the shell 5, retainer 3, arm covers 4 |
+| M3 × 16 countersunk | 2 | Turntable cover |
 | M3 × 10 | 8 | Motor 4 (with washers), arms 4 |
 | M3 × 20 | 2 | Head halves, driven from behind under the tail |
-| M3 × 16 | 1 | Tilt axle |
 | M3 × 6 | 1 | Head seam, top |
 | M2.5 × 5 | 4 | Pi Zero 2 |
 | M2 × 5 | 11 | Protoboard, camera, iris plate |
 | M2 × 8 self-tapping | 3 | Spigot cap |
 | M2 × 10 self-tapping | 2 | Homing switch |
 | 6806-2RS bearing (30 × 42 × 7) | 1 | Pan |
-| 623ZZ bearing (3 × 10 × 4) | 1 | Tilt axle |
 | GT2 closed belt, 200 mm, 6 mm wide | 1 | Pan |
 | GT2 20-tooth pulley, 5 mm bore | 1 | On the motor (Ender 3 X/Y motors already have one) |
 | NEMA17 stepper, up to 34 mm long | 1 | Pan |
@@ -116,8 +120,8 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 | Rubber feet, M4 or stick-on | 4 | Under the plate |
 | Silicone wire, 24 AWG (power) and 28 AWG (signal) | ~0.5 m each | Head harness |
 | Servo extension lead, 30 cm | 1 | Tilt servo to the protoboard |
-| 4-pin connector pair (JST-XH or similar) | 1 | So the head can be unplugged |
-| Small zip ties | 8 | Cable anchors |
+| 4-pin connector pair, small enough for an 8 mm bore (JST-SH or similar) | 1 | So the head can be unplugged |
+| Small zip ties | 6 | Cable anchors |
 | NPN transistor and 6 resistors | 1 set | Iris LEDs |
 
 ### Assembly order
@@ -131,16 +135,18 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 5. Turn the turntable to 180°, reach the motor screws through its slots, tension
    the belt and tighten.
 6. Drop the ring over the turntable and screw ring and deck to the shell.
-7. Bolt both arms to the turntable.
+7. Bolt the servo arm to the turntable.
 8. Head: Pi on the sled, camera and LEDs on the iris plate, iris plate into the
-   front half, bezel over the barrel. Slide the sled into the rear half, join the
-   halves and fit the three seam screws.
-9. Screw the servo horn into the recess on the head. Hold the head between the
-   arms, push the servo through its arm into the horn and fit the axle screw with
-   its spacer on the other side.
-10. Run the servo lead down the arm and across the turntable, and the head harness
-    out of the hole under the head, and feed both down the hollow axis. Tie them
-    at each anchor, leaving the slack described under Wiring.
+   front half, bezel over the barrel. Push the trunnion out through the side of
+   the rear half from inside and thread the harness through it. Slide the sled
+   in, join the halves and fit the three seam screws.
+9. Screw the servo horn into the recess on the head. Hold the head beside the
+   servo arm and push the servo through the arm into the horn. Slide the spacer
+   and the idle arm over the trunnion, then bolt the idle arm down.
+10. Run the servo lead and the harness down their arms, through the channel under
+    each arm and to the centre of the turntable, and feed both down the hollow
+    axis. Tie them at each anchor.
+11. Fit the turntable cover, then the two arm covers.
 
 ## Electronics
 
@@ -158,7 +164,7 @@ they are for both the pan drive and the rail.
 ## Wiring
 
 Seven wires cross the pan axis and four of them go on into the head. Nothing else
-connects the moving parts to the base.
+connects the moving parts to the base, and none of it shows once the covers are on.
 
 ![Wiring runs](docs/img/wiring.png)
 
@@ -184,21 +190,20 @@ flowchart LR
   PICO == PWM ==> SERVO
 ```
 
-| Run | Wires | Path | What it has to survive |
+| Run | Wires | Path | Hidden by |
 |---|---|---|---|
-| Head harness (red) | 5 V, GND, TX, RX | Pi header → hole under the head → slack loop → down the hollow axis → tie bar on the plate → protoboard | Bending with the tilt (the loop) and ±165° of twist (inside the bore) |
-| Servo lead (yellow) | 5 V, GND, signal | Down the outside of the servo arm → round its back edge → across the turntable → down the hollow axis → tie bar → protoboard | Twist only: it rides on the turntable |
-| Camera ribbon | CSI | Iris plate → Pi, inside the head | Nothing: no joint in between |
+| Head harness (red) | 5 V, GND, TX, RX | Pi header → out through the hollow trunnion on the tilt axis → down the outside of the idle arm → channel under the arm → centre of the turntable → hollow pan axis → tie bar on the plate → protoboard | Idle arm cover, turntable cover |
+| Servo lead (yellow) | 5 V, GND, signal | Down the outside of the servo arm → channel under the arm → centre of the turntable → hollow pan axis → tie bar → protoboard | Servo arm cover, turntable cover |
+| Camera ribbon | CSI | Iris plate → Pi | Inside the head |
 
-Anchor every run on both sides of a joint so the movement is taken by free cable
-and not by a solder joint. The parts have a place for each tie:
+Both joints are crossed along their own axis, so the wires only twist: about ±25°
+in the trunnion and ±165° in the pan bore. Nothing hangs between the head and the
+turntable. The trunnion bore is 8 mm, enough for a small 4-pin connector (JST-SH
+or PicoBlade size), which then lives inside the idle arm cover.
 
-- a rib with a slot behind the cable hole inside `head_rear`,
-- two pairs of slots down `arm_servo` and one pair of holes in `turntable`,
-- a tie bar on `plate`, straight under the spigot.
-
-Leave about 30 mm of slack between the head and the turntable, and about 60 mm
-of free length inside the bore.
+Tie each run where the parts provide for it: two pairs of slots down the servo
+arm, a pair of holes in the turntable on each side, and the tie bar on the plate
+straight under the spigot. Leave about 60 mm of free length inside the pan bore.
 
 ### Pins (proposed)
 
@@ -231,10 +236,10 @@ python3 sim/dynamics.py
 
 | | |
 |---|---|
-| Head | 122 g, centre of mass 10 mm ahead of the tilt axis |
-| Rotating mass / whole robot | 251 g / about 0.9 kg |
-| Pan inertia | 4.4 × 10⁻⁴ kg·m² including the reflected rotor |
-| Pan acceleration available | about 105 000 °/s² (3 000 is plenty) |
+| Head | 125 g, centre of mass 10 mm ahead of the tilt axis |
+| Rotating mass / whole robot | 312 g / about 1 kg |
+| Pan inertia | 6.2 × 10⁻⁴ kg·m² including the reflected rotor |
+| Pan acceleration available | about 73 000 °/s² (3 000 is plenty) |
 | Tilt gravity torque, worst case | 14.6 mN·m against 180 mN·m of servo stall |
 | 90° move / 330° unwind | 0.37 s / 1.04 s at 360 °/s and 3 000 °/s² |
 
@@ -254,6 +259,8 @@ part in your hand; all of them are parameters.
   connector. The aperture is oversized to forgive about 1.5 mm.
 - **Homing switch.** A KW11-style lever switch with holes 9.5 mm apart.
 - **Protoboard.** 50 × 70 mm with holes 2 mm in from the edges.
+- **Tilt trunnion.** A printed tube turning in a printed hole. Fine for a slow,
+  light axis, but it will have a little play.
 - **Eye shutters.** The two lids are fixed for now; the blinking mechanism is not
   designed yet.
 

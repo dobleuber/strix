@@ -17,11 +17,12 @@
 $fn = 96;
 
 /* [What to show] */
-part    = "assembly";  // assembly | plate | shell | deck | cap | turntable | retainer | ring | arm_servo | arm_idle | head_rear | head_front | iris | bezel | sled | spacer | port_plug | gauge
+part    = "assembly";  // assembly | plate | shell | deck | cap | turntable | retainer | ring | arm_servo | arm_idle | cover_servo | cover_idle | turntable_cover | head_rear | head_front | trunnion | iris | bezel | sled | spacer | port_plug | gauge
 pan     = 0;
 tilt    = 0;
 cutaway = false;       // section through the assembly
 show_cables = true;    // draw the wiring runs in the assembly
+show_covers = true;    // arm covers and turntable cover
 as_built = false;      // true: emit a single part where it sits in the assembly, not in print pose
 
 /* [Fits - tune with the gauge part] */
@@ -76,7 +77,9 @@ arm_t    = 5;
 servo_len = 22.8;  servo_w = 12.2;        // MG90S / SG90 body
 servo_shaft_off = 6.0;                    // shaft axis to the near end of the body
 servo_ear_pitch = 27.8;                   // between the two ear screws
-axle_brg = [3, 10, 4];                    // 623 bearing on the idle side
+trunnion_d = 12;  trunnion_bore = 8;      // hollow trunnion on the idle side: the head harness runs through it
+cover_d = 21.5;                           // depth of the arm covers (clears the servo body)
+cap_h = 9;                                // height of the turntable cover
 
 /* [Head] */
 hx0 = -40;  htail = 46;      // tail: rear end and length of the tapering zone
@@ -261,7 +264,8 @@ module turntable() {
         translate([0, 0, zd]) cylinder(d = brg[1] - 3.6, h = 10);                           // lip under the outer race
         for (a = [60, 180, 300]) rotate(a) translate([26.5, 0, z_top]) ins_down([ins_m3[0], tt_t + 0.5]);
         for (sx = [-1, 1], sy = [-1, 1]) translate([sx * 16, sy * (arm_y + arm_t + 6), z_top]) ins_down([ins_m3[0], tt_t + 1]);
-        for (d = [-1, 1]) translate([-24 + d * 3.5, 34 + d * 1.9, z_tt - 1]) hole(3.2, tt_t + 2);           // zip tie for the servo lead
+        for (d = [-1, 1], sy = [-1, 1]) translate([d * 3.5, sy * 31, z_tt - 1]) hole(3.2, tt_t + 2);        // zip ties for the two runs, under the cover
+        for (sx = [-1, 1]) translate([sx * 36, 0, z_top]) ins_down([ins_m3[0], tt_t + 1]);                  // turntable cover
         // reach the motor screws through the disc with the head turned to pan = 180
         for (sx = [-1, 1], sy = [-1, 1]) hull() for (dx = [-3, 4])
             translate([pan_c + sx * nema_hole / 2 + dx, sy * nema_hole / 2, z_tt - 1]) hole(6.5, tt_t + 2);
@@ -283,13 +287,14 @@ module retainer() {
 }
 
 // =============================== YOKE ===============================
-module arm_profile(servo) {
+// both arms share one outline, so the two covers are mirror images
+module arm_profile() {
     hull() {
         translate([-27, 0]) square([54, 2]);
-        if (servo) translate([-26 + 6, tilt_h - 12 + 6]) offset(r = 6) square([41 - 12, 24 - 12]);
-        else translate([0, tilt_h]) circle(r = 12);
+        translate([-26 + 6, tilt_h - 12 + 6]) offset(r = 6) square([41 - 12, 24 - 12]);
     }
 }
+cover_posts = [[14, 34], [-20, 34]];      // cover screws: [x, height above the turntable]
 module arm(servo) {
     s = servo ? 1 : -1;
     yi = s * arm_y;                       // inner face
@@ -297,24 +302,71 @@ module arm(servo) {
     xc = servo_shaft_off - servo_len / 2; // servo body centre
     difference() {
         union() {
-            translate([0, max(yi, yo), z_top]) rotate([90, 0, 0]) linear_extrude(arm_t) arm_profile(servo);
+            translate([0, max(yi, yo), z_top]) rotate([90, 0, 0]) linear_extrude(arm_t) arm_profile();
             intersection() {                                                               // foot, outwards
                 translate([-27, min(yo, yo + s * 12), z_top]) cube([54, 12, 5]);
                 cylinder(d = tt_d, h = 300);
             }
             for (gx = [-22, 19]) translate([gx, yo, z_top]) rotate([90, 0, 90])           // gussets
                 linear_extrude(3) polygon([[0, 0], [s * 10, 0], [s * 10, 5], [0, 20]]);
+            for (q = cover_posts) translate([q[0], yo, z_top + q[1]]) rotate([-s * 90, 0, 0]) cylinder(d = 8.5, h = 4, $fn = 32);   // bosses for the cover screws
         }
         for (sx = [-1, 1]) translate([sx * 16, s * (arm_y + arm_t + 6), z_top - 1]) hole(clr_m3, 30);
         for (sx = [-1, 1]) translate([sx * 16, s * (arm_y + arm_t + 6), z_top + 5]) hole(6.4, 30);   // screw head clearance through the gusset zone
+        for (q = cover_posts) translate([q[0], yo + s * 4, z_top + q[1]]) rotate([s * 90, 0, 0]) ins(ins_m3);
+        translate([-4, min(yi, yi + s * (arm_t + 13)), z_top - 0.01]) cube([8, arm_t + 13, 4.5]);   // channel at turntable level, through the foot and the arm, into the turntable cover
         if (servo) {
             translate([xc - servo_len / 2 - tol, yi - 1, z_tilt - servo_w / 2 - tol]) cube([servo_len + 2 * tol, arm_t + 2, servo_w + 2 * tol]);
             for (d = [-1, 1]) translate([xc + d * servo_ear_pitch / 2, yi - 1, z_tilt]) rotate([-90, 0, 0]) hole(pilot_m2, arm_t + 2);
             for (z = [22, 40], dx = [-10, -2]) translate([dx - 1, yi - 1, z_top + z - 2]) cube([2, arm_t + 2, 4]);   // zip ties for the servo lead
         } else {
-            translate([0, yi + 0.01, z_tilt]) rotate([90, 0, 0]) hole(axle_brg[1] + 0.1, axle_brg[2] + 0.1);
-            translate([0, yi, z_tilt]) rotate([90, 0, 0]) hole(6.5, arm_t + 1);
+            translate([0, yi + 1, z_tilt]) rotate([90, 0, 0]) cylinder(d = trunnion_d + 0.3, h = arm_t + 2);   // plain bearing for the trunnion
         }
+    }
+}
+
+// ---- covers: nothing electrical stays in sight ----
+module cover_outline(inset = 0) { intersection() { offset(delta = 1 - inset) arm_profile(); translate([-80, inset]) square([160, 200]); } }
+// shell over the outside of an arm: hides the servo and its lead, or the harness and its connector
+module arm_cover(servo) {
+    yo = arm_y + arm_t;
+    mirror([0, servo ? 0 : 1, 0]) difference() {
+        union() {
+            difference() {
+                hull() {
+                    translate([0, yo + cover_d - 6, z_top]) rotate([90, 0, 0]) linear_extrude(cover_d - 6) cover_outline();
+                    translate([0, yo + cover_d, z_top]) rotate([90, 0, 0]) linear_extrude(0.01) cover_outline(6);
+                }
+                hull() {
+                    translate([0, yo + cover_d - 6.8, z_top]) rotate([90, 0, 0]) linear_extrude(cover_d - 5.8) cover_outline(2);
+                    translate([0, yo + cover_d - 2, z_top]) rotate([90, 0, 0]) linear_extrude(0.01) cover_outline(6.8);
+                }
+            }
+            for (q = cover_posts) translate([q[0], yo + 4.2, z_top + q[1]]) rotate([-90, 0, 0]) cylinder(d = 8, h = cover_d - 4.2, $fn = 32);
+        }
+        for (q = cover_posts) {
+            translate([q[0], yo, z_top + q[1]]) rotate([-90, 0, 0]) hole(clr_m3, cover_d + 1);
+            translate([q[0], yo + 7.2, z_top + q[1]]) rotate([-90, 0, 0]) hole(6.2, cover_d);            // deep counterbore: an M3 x 8 sits inside the post
+        }
+        translate([-28, yo - 1, z_top - 1]) cube([56, 13.3, 6.3]);                                        // sits over the arm's foot
+    }
+}
+module cap_2d(inset = 0) { offset(delta = -inset) intersection() { circle(r = 61); square([200, 2 * (arm_y - 0.4)], center = true); } }
+// low cover between the arms: hides both runs on their way to the hollow axis, and the retainer
+module turntable_cover() {
+    difference() {
+        union() {
+            difference() {
+                hull() {
+                    translate([0, 0, z_top]) linear_extrude(cap_h - 2.5) cap_2d();
+                    translate([0, 0, z_top + cap_h - 0.01]) linear_extrude(0.01) cap_2d(2.5);
+                }
+                translate([0, 0, z_top - 0.01]) linear_extrude(cap_h - 1.6) cap_2d(1.6);
+            }
+            for (sx = [-1, 1]) translate([sx * 36, 0, z_top]) cylinder(d = 8, h = cap_h - 1, $fn = 32);
+        }
+        for (sy = [-1, 1]) translate([-5, sy * (arm_y - 1.4) - 1.5, z_top - 0.01]) cube([10, 3, 6]);     // the runs come in here, under the arms
+        for (sx = [-1, 1]) translate([sx * 36, 0, z_top - 1]) { hole(clr_m3, 20); translate([0, 0, cap_h - 0.6]) cylinder(d1 = 3.4, d2 = 6.6, h = 1.61, $fn = 32); }
     }
 }
 
@@ -354,13 +406,12 @@ module head_rear() {
                 xslab(-200, hseam);
                 union() {
                     translate([0, pad_servo_y - 4, 0]) rotate([-90, 0, 0]) cylinder(d = 26, h = 8);       // horn pad
-                    translate([0, pad_idle_y + 7, 0]) rotate([90, 0, 0]) cylinder(d = 10, h = 9, $fn = 32); // axle boss
+                    translate([0, pad_idle_y + 5.5, 0]) rotate([90, 0, 0]) cylinder(d = 22, h = 7.5);       // pad for the trunnion
                     for (s = [-1, 1]) hull() {                                                              // chin screw bosses
                         translate([-19, s * 13, -21]) rotate([0, 90, 0]) cylinder(d = 9, h = 10, $fn = 32);
                         translate([1.2, s * 13 - 4.5, p_z0 + hwall - 1]) cube([0.2, 9, 1.2]);
                     }
                     translate([-14, 0, 28]) cylinder(d = 8, h = 14, $fn = 32);                              // antenna socket
-                    translate([-24, -1.5, p_z0]) cube([10, 3, 16]);                                         // strain-relief rib for the harness
                     rails();
                 }
             }
@@ -370,17 +421,15 @@ module head_rear() {
         translate([0, pad_servo_y, 0]) rotate([-90, 0, 0]) cylinder(d = 24, h = 20);
         translate([0, pad_servo_y - 1.6, 0]) rotate([-90, 0, 0]) linear_extrude(3) hull() for (dx = [-13.5, 13.5]) translate([dx, 0]) circle(d = 7.6, $fn = 32);
         translate([0, pad_servo_y - 6, 0]) rotate([-90, 0, 0]) hole(4, 10);
-        // idle side: flat and M3 insert for the axle screw
-        translate([0, pad_idle_y, 0]) rotate([90, 0, 0]) cylinder(d = 12, h = 20);
-        translate([0, pad_idle_y, 0]) rotate([-90, 0, 0]) ins(ins_m3);
+        // idle side: flat, and the hole the hollow trunnion pushes through from inside
+        translate([0, pad_idle_y, 0]) rotate([90, 0, 0]) cylinder(d = 18, h = 20);
+        translate([0, pad_idle_y - 1, 0]) rotate([-90, 0, 0]) cylinder(d = trunnion_d + 0.3, h = 12);
         for (s = [-1, 1]) {                                                                                  // chin screws, driven from behind
             translate([-13, s * 13, -21]) rotate([0, 90, 0]) hole(clr_m3, 30);
             translate([-13, s * 13, -21]) rotate([0, -90, 0]) hole(6.4, 80);
         }
         translate([hseam - tongue_len / 2, 0, 30]) hole(clr_m3, 20);                                         // top seam screw
-        translate([-6, 0, p_z0 - 5]) cylinder(d = 14, h = 12);                                               // cables down to the hollow axis
         translate([-14, 0, 29]) hole(3.2, 20);                                                               // 3 mm antenna rod
-        translate([-21, -5, -18.5]) cube([4, 10, 2.2]);                                                      // zip tie through the rib
     }
 }
 
@@ -465,7 +514,17 @@ module sled() {
     }
 }
 
-module spacer() { translate([0, pad_idle_y, 0]) rotate([90, 0, 0]) tube(5.4, 3.3, arm_y + pad_idle_y); }
+// flanged tube: the flange sits inside the head, the tube turns in the idle arm and carries the harness
+module trunnion() {
+    difference() {
+        union() {
+            translate([0, pad_idle_y + 5.5, 0]) rotate([-90, 0, 0]) cylinder(d = 17, h = 2.5);
+            translate([0, pad_idle_y + 5.5, 0]) rotate([90, 0, 0]) cylinder(d = trunnion_d, h = 5.5 + (arm_y + pad_idle_y) + arm_t + 1);
+        }
+        translate([0, pad_idle_y + 9, 0]) rotate([90, 0, 0]) cylinder(d = trunnion_bore, h = 40);
+    }
+}
+module spacer() { translate([0, pad_idle_y, 0]) rotate([90, 0, 0]) tube(16, trunnion_d + 0.4, arm_y + pad_idle_y - 0.2); }
 
 // test coupon: insert holes at -0.2 / nominal / +0.2, bearing post and pocket
 module gauge() {
@@ -521,15 +580,17 @@ module v_camera() eye_frame(hx1) color(C_PCB) {
 function hd(p) = [p[0] * cos(tilt) - p[2] * sin(tilt), p[1], p[0] * sin(tilt) + p[2] * cos(tilt) + z_tilt];   // head frame -> turntable frame
 module wire(pts, d) { for (i = [0 : len(pts) - 2]) hull() { translate(pts[i]) sphere(d = d, $fn = 12); translate(pts[i + 1]) sphere(d = d, $fn = 12); } }
 C_HARNESS = "#d7263d";  C_LEAD = "#f2c14e";
-// head harness (5 V, GND, TX, RX): Pi header -> hole under the head -> slack loop -> hollow axis
-module v_harness_pan() color(C_HARNESS) wire([hd([0, 8, 19]), hd([-10, 5, -6]), hd([-6, 2, -22]), hd([-6, 2, -32]),
-    [-20, 2, z_top + 20], [-9, 2, z_top + 7], [0, 2, z_top + 2], [0, 2, zd - 2], [0, 2, z_deck - 5]], 3.2);
-module v_harness_base() color(C_HARNESS) wire([[0, 2, z_deck - 5], [-8, 2, plate_t + 9], [12, 4, plate_t + proto_so + 5]], 3.2);
-// tilt servo lead: down the outside of the arm, round its back edge, across the turntable, down the axis
-module v_lead_pan() color(C_LEAD) wire([[-14, arm_y + arm_t + 16, z_tilt - 5], [-8, arm_y + arm_t + 3, z_tilt - 14], [-6, arm_y + arm_t + 1.5, z_top + 40],
-    [-6, arm_y + arm_t + 1.5, z_top + 22], [-29, arm_y + arm_t + 1, z_top + 21], [-31, arm_y - 2, z_top + 3], [-24, 34, z_top + 1.5],
-    [-8, 11, z_top + 4], [0, 6, z_top + 2], [0, 6, zd - 2], [0, 6, z_deck - 5]], 2.6);
-module v_lead_base() color(C_LEAD) wire([[0, 6, z_deck - 5], [-8, 6, plate_t + 9], [12, 12, plate_t + proto_so + 5]], 2.6);
+// head harness (5 V, GND, TX, RX): Pi header -> out through the hollow trunnion -> down inside the idle arm cover
+// -> under the arm -> under the turntable cover -> hollow pan axis
+module v_harness_pan() color(C_HARNESS) wire([hd([0, 8, 19]), hd([0, -12, 8]), hd([0, -28, 0]), hd([0, -51, 0]),
+    [0, -58, z_tilt - 8], [0, -62, z_top + 16], [0, -61, z_top + 3], [0, -40, z_top + 2.2], [0, -33, z_top + 2.2],
+    [0, -9, z_top + 5], [0, -2, z_top + 4], [0, -2, zd - 2], [0, -2, z_deck - 5]], 3.2);
+module v_harness_base() color(C_HARNESS) wire([[0, -2, z_deck - 5], [-8, -2, plate_t + 9], [12, -6, plate_t + proto_so + 5]], 3.2);
+// tilt servo lead: down inside the servo arm cover -> under the arm -> under the turntable cover -> hollow pan axis
+module v_lead_pan() color(C_LEAD) wire([[-14, arm_y + arm_t + 15, z_tilt - 5], [-8, arm_y + arm_t + 3, z_tilt - 14], [-6, arm_y + arm_t + 1.5, z_top + 40],
+    [-6, arm_y + arm_t + 1.5, z_top + 22], [0, arm_y + arm_t + 14, z_top + 8], [0, arm_y + arm_t + 14, z_top + 2.2], [0, 40, z_top + 2.2], [0, 33, z_top + 2.2],
+    [0, 9, z_top + 5], [0, 3, z_top + 4], [0, 3, zd - 2], [0, 3, z_deck - 5]], 2.6);
+module v_lead_base() color(C_LEAD) wire([[0, 3, z_deck - 5], [-8, 3, plate_t + 9], [12, 8, plate_t + proto_so + 5]], 2.6);
 
 // ============================== ASSEMBLY ==============================
 module assembly() {
@@ -547,6 +608,7 @@ module assembly() {
         color(C_DARK) retainer();
         color(C_PRINT) arm(true);
         color(C_PRINT) arm(false);
+        if (show_covers) { color(C_DARK) arm_cover(true); color(C_DARK) arm_cover(false); color(C_DARK) turntable_cover(); }
         v_servo();
         translate([0, 0, z_tilt]) rotate([0, -tilt, 0]) {
             color(C_PRINT) head_rear();
@@ -554,7 +616,8 @@ module assembly() {
             color(C_LIGHT) iris();
             color(C_DARK) bezel();
             color(C_LIGHT) sled();
-            color(C_METAL) spacer();
+            color(C_DARK) spacer();
+            color(C_DARK) trunnion();
             v_pi(); v_camera();
         }
     }
@@ -570,6 +633,8 @@ module raw(p) {
     else if (p == "head_rear") head_rear(); else if (p == "head_front") head_front();
     else if (p == "iris") iris();         else if (p == "bezel") bezel();
     else if (p == "sled") sled();         else if (p == "spacer") spacer();
+    else if (p == "cover_servo") arm_cover(true); else if (p == "cover_idle") arm_cover(false);
+    else if (p == "turntable_cover") turntable_cover(); else if (p == "trunnion") trunnion();
 }
 
 // ============================ PRINT POSES ============================
@@ -594,12 +659,18 @@ else if (part == "bezel")      translate([0, 0, hx1 + 7]) rotate([0, 90, 0]) bez
 else if (part == "sled")       translate([0, 0, -sled_z]) sled();
 else if (part == "spacer")     translate([0, 0, pad_idle_y]) rotate([-90, 0, 0]) spacer();
 else if (part == "port_plug")  translate([0, 0, base_d / 2 + 1.2]) rotate([0, 90, 0]) rotate(-128) port_plug();
+else if (part == "cover_servo") translate([0, 0, arm_y + arm_t + cover_d]) rotate([-90, 0, 0]) arm_cover(true);
+else if (part == "cover_idle")  translate([0, 0, arm_y + arm_t + cover_d]) rotate([90, 0, 0]) arm_cover(false);
+else if (part == "turntable_cover") rotate([180, 0, 0]) translate([0, 0, -(z_top + cap_h)]) turntable_cover();
+else if (part == "trunnion")   translate([0, 0, pad_idle_y + 8]) rotate([-90, 0, 0]) trunnion();
 else if (part == "gauge")      gauge();
 // interference probes: an empty result means the two parts do not touch
 else if (part == "x_head")       intersection() { head_rear(); head_front(); }
 else if (part == "x_sled_rear")  intersection() { head_rear(); sled(); }
 else if (part == "x_sled_front") intersection() { head_front(); sled(); }
 else if (part == "x_iris")       intersection() { head_front(); iris(); }
-else if (part == "x_tt_deck")    intersection() { turntable(); union() { deck(); ring(); v_nema(); v_switch(); } }
-else if (part == "x_yoke_head")  intersection() { union() { arm(true); arm(false); turntable(); retainer(); }
+else if (part == "x_tt_deck")    intersection() { union() { turntable(); arm_cover(true); arm_cover(false); turntable_cover(); } union() { deck(); ring(); v_nema(); v_switch(); } }
+else if (part == "x_covers")     intersection() { union() { arm_cover(true); arm_cover(false); turntable_cover(); } union() { arm(true); arm(false); turntable(); retainer(); v_servo(); } }
+else if (part == "x_trunnion")   intersection() { union() { trunnion(); spacer(); } union() { arm(false); head_rear(); sled(); } }
+else if (part == "x_yoke_head")  intersection() { union() { arm(true); arm(false); turntable(); retainer(); arm_cover(true); arm_cover(false); turntable_cover(); }
                                                   translate([0, 0, z_tilt]) rotate([0, -tilt, 0]) union() { head_rear(); head_front(); bezel(); } }

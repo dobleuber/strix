@@ -21,10 +21,12 @@ DENSITY = 1.24e-6          # kg/mm3, PLA (PETG is about 2 % more)
 # share of each part's solid volume that is actually plastic (walls + infill)
 FILL = dict(plate=0.9, shell=0.95, deck=0.7, cap=1.0, ring=0.95, port_plug=1.0,
             turntable=0.6, retainer=0.9, arm_servo=0.7, arm_idle=0.7,
-            head_rear=0.95, head_front=0.95, iris=1.0, bezel=1.0, sled=1.0, spacer=1.0)
+            head_rear=0.95, head_front=0.95, iris=1.0, bezel=1.0, sled=1.0, spacer=1.0,
+            cover_servo=0.95, cover_idle=0.95, turntable_cover=0.95, trunnion=1.0)
 BASE = ["plate", "shell", "deck", "cap", "ring", "port_plug"]
-PAN = ["turntable", "retainer", "arm_servo", "arm_idle"]       # turntable frame = world at pan 0
-HEAD = ["head_rear", "head_front", "iris", "bezel", "sled", "spacer"]   # head frame, origin on the tilt axis
+PAN = ["turntable", "retainer", "arm_servo", "arm_idle",
+       "cover_servo", "cover_idle", "turntable_cover"]              # turntable frame = world at pan 0
+HEAD = ["head_rear", "head_front", "iris", "bezel", "sled", "spacer", "trunnion"]   # head frame, origin on the tilt axis
 
 Z_TILT = 142.0             # tilt axis above the underside of the plate (mm)
 # bought parts as point masses: (kg, x, y, z) in the frame of their group
