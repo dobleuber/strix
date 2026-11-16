@@ -8,9 +8,3 @@
 Thumbs.db
 .vscode/
 .idea/
-
-# generative design: working files and the full 17 MB meshes (stl/generative holds the thinned ones)
-/generative/out/
-/generative/parts/*.stl
-!/generative/parts/*_lite.stl
-__pycache__/
