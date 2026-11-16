@@ -79,6 +79,9 @@ servo_shaft_off = 6.0;                    // shaft axis to the near end of the b
 servo_ear_pitch = 27.8;                   // between the two ear screws
 trunnion_d = 12;  trunnion_bore = 8;      // hollow trunnion on the idle side: the head harness runs through it
 cover_d = 21.5;                           // depth of the arm covers (clears the servo body)
+arm_style = "plate";                      // "plate": the hand-drawn arms.  "generative": the grown arms in generative/parts
+                                          // (print those STLs as they are; this file only places their light copies)
+gen_skin = 1.25;                          // the grown arms keep a closed inner face this thick
 cap_h = 9;                                // height of the turntable cover
 
 /* [Head] */
@@ -327,6 +330,15 @@ module arm(servo) {
 
 // ---- covers: nothing electrical stays in sight ----
 module cover_outline(inset = 0) { intersection() { offset(delta = 1 - inset) arm_profile(); translate([-80, inset]) square([160, 200]); } }
+// a grown arm, placed in the assembly from its light copy (frames: generative/problems.py)
+module arm_grown(servo) {
+    if (servo) translate([0, 0, z_top]) rotate([-90, 0, 0]) translate([0, 0, arm_y]) rotate(180) import("../generative/parts/arm_servo_lite.stl", convexity = 10);
+    else       translate([0, 0, z_top]) rotate([90, 0, 0]) translate([0, 0, arm_y]) import("../generative/parts/arm_idle_lite.stl", convexity = 10);
+}
+module any_arm(servo) { if (arm_style == "generative") arm_grown(servo); else arm(servo); }
+// the grown arms stay inside their outline above the skin, so the cover's wall comes down to the skin
+cover_drop = arm_style == "generative" ? arm_t - gen_skin : 0;
+
 // shell over the outside of an arm: hides the servo and its lead, or the harness and its connector
 module arm_cover(servo) {
     yo = arm_y + arm_t;
@@ -334,11 +346,11 @@ module arm_cover(servo) {
         union() {
             difference() {
                 hull() {
-                    translate([0, yo + cover_d - 6, z_top]) rotate([90, 0, 0]) linear_extrude(cover_d - 6) cover_outline();
+                    translate([0, yo + cover_d - 6, z_top]) rotate([90, 0, 0]) linear_extrude(cover_d - 6 + cover_drop) cover_outline();
                     translate([0, yo + cover_d, z_top]) rotate([90, 0, 0]) linear_extrude(0.01) cover_outline(6);
                 }
                 hull() {
-                    translate([0, yo + cover_d - 6.8, z_top]) rotate([90, 0, 0]) linear_extrude(cover_d - 5.8) cover_outline(2);
+                    translate([0, yo + cover_d - 6.8, z_top]) rotate([90, 0, 0]) linear_extrude(cover_d - 5.8 + cover_drop) cover_outline(2);
                     translate([0, yo + cover_d - 2, z_top]) rotate([90, 0, 0]) linear_extrude(0.01) cover_outline(6.8);
                 }
             }
@@ -348,7 +360,7 @@ module arm_cover(servo) {
             translate([q[0], yo, z_top + q[1]]) rotate([-90, 0, 0]) hole(clr_m3, cover_d + 1);
             translate([q[0], yo + 7.2, z_top + q[1]]) rotate([-90, 0, 0]) hole(6.2, cover_d);            // deep counterbore: an M3 x 8 sits inside the post
         }
-        translate([-28, yo - 1, z_top - 1]) cube([56, 13.3, 6.3]);                                        // sits over the arm's foot
+        translate([-28, yo - 1 - cover_drop, z_top - 1]) cube([56, 13.3 + cover_drop, 6.3]);              // sits over the arm's foot
     }
 }
 module cap_2d(inset = 0) { offset(delta = -inset) intersection() { circle(r = 61); square([200, 2 * (arm_y - 0.4)], center = true); } }
@@ -606,8 +618,8 @@ module assembly() {
         if (show_cables) { v_harness_pan(); v_lead_pan(); }
         color(C_PRINT) turntable();
         color(C_DARK) retainer();
-        color(C_PRINT) arm(true);
-        color(C_PRINT) arm(false);
+        color(C_PRINT) any_arm(true);
+        color(C_PRINT) any_arm(false);
         if (show_covers) { color(C_DARK) arm_cover(true); color(C_DARK) arm_cover(false); color(C_DARK) turntable_cover(); }
         v_servo();
         translate([0, 0, z_tilt]) rotate([0, -tilt, 0]) {

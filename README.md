@@ -247,6 +247,47 @@ The mechanics have a wide margin, so tracking quality is set by the vision loop
 (frame rate and latency), not by the motor. The motor torque (0.2 N·m usable),
 fill factors and component masses are assumptions listed at the top of the script.
 
+## Grown arms (optional build)
+
+The two yoke arms were also run through generative design (topology optimization),
+using the room that opened up under the covers. The grown arms keep everything
+that matters to their neighbours (closed inner face, foot, cover bosses, servo
+window or trunnion bearing) and rearrange the rest into broad ribs.
+
+![Original and grown arms](docs/img/generative-arms.png)
+
+| | Idle arm | Servo arm |
+|---|---|---|
+| Mass, solid PLA | 24.7 → 22.4 g (−9 %) | 23.4 → 22.4 g (−4 %) |
+| Stiffness, head's weight | × 1.1 | × 1.9 |
+| Stiffness, knock fore-aft | × 1.1 | × 1.3 |
+| Stiffness, knock sideways | × 2.5 | × 2.9 |
+| Stiffness, servo stall torque | | × 1.03 |
+| Surface overhanging past 45° | 0.6 % | 0.4 % |
+
+The ratios come from the same voxel model for both parts and are not safety
+factors. The loads are assumed, not measured: a 300 g head times two, a 10 N
+knock each way, and the servo's 180 N·mm stall torque. They are written out in
+`generative/problems.py`.
+
+What it buys is stiffness against a sideways knock, and little else. The covers
+for the grown arms are 3.75 mm deeper, which gives back the few grams the arms
+save, and the plate arms were already stiff enough for this head. The plate arms
+stay the default; the grown ones are a second build:
+
+- print `stl/generative/arm_idle.stl` and `arm_servo.stl` as they lie (skin down),
+  with `stl/generative/cover_idle.stl` and `cover_servo.stl` instead of the
+  standard covers;
+- `-D 'arm_style="generative"'` shows them in the assembly.
+
+![Grown arms in the assembly](docs/img/generative-assembly.png)
+
+The grown arms are meshes, not editable solids. To change them, edit
+`generative/problems.py` and run the generative-part pipeline again, then
+`generative/dress.py` (exact outline and the foot screws, which the pipeline
+cannot cut) and `generative/check_fit.py` (no shared volume with the turntable,
+covers, servo or the head through its tilt range).
+
 ## Known unknowns
 
 These are assumptions built into the printable parts. Check each against the
