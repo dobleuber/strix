@@ -50,27 +50,29 @@ leaves room for a slip ring if continuous rotation is wanted later.
 
 ![Parts](docs/img/print-parts.png)
 
-| Part | Qty | Notes |
-|---|---|---|
-| `gauge` | 1 | **Print first.** Insert holes at −0.2 / nominal / +0.2 and the two bearing fits |
-| `plate` | 1 | Standoffs for a 50 × 70 mm protoboard, rim and zip-tie slots for the buck converter |
-| `shell` | 1 | Holes for a DC jack, a toggle switch and the future rail connector |
-| `deck` | 1 | Flat side down. Carries the spigot, the stop post and the switch wall |
-| `cap` | 1 | Retains the bearing's inner race |
-| `ring` | 1 | Belt cover, flange down |
-| `turntable` | 1 | Disc down, pulley up. Slow outer walls help the teeth |
-| `retainer` | 1 | Flange down. Holds the outer race |
-| `arm_servo`, `arm_idle` | 1 each | Flat, inner face down |
-| `cover_servo`, `cover_idle` | 1 each | Outer face down. Mirror images of each other |
-| `turntable_cover` | 1 | Top face down |
-| `trunnion` | 1 | Flange down. Hollow tilt axle that the head harness runs through |
-| `head_rear`, `head_front` | 1 each | Standing on the seam, no supports. Use a brim |
-| `iris` | 1 | White or translucent filament, front face down |
-| `bezel` | 1 | Dark filament, front face down |
-| `sled` | 1 | Pi Zero 2 tray |
-| `spacer` | 1 | Ring between the head and the idle arm |
-| `port_plug` | 1 | Closes the rail connector hole for now |
+| Part | Qty | Size as printed (mm) | Notes |
+|---|---|---|---|
+| `gauge` | 1 | 69 × 125 × 9 | **Print first.** Insert holes at −0.2 / nominal / +0.2 and the two bearing fits |
+| `plate` | 1 | 160 × 160 × 10 | Standoffs for a 50 × 70 mm protoboard, rim and zip-tie slots for the buck converter |
+| `shell` | 1 | 160 × 160 × 46 | Holes for a DC jack, a toggle switch and the future rail connector |
+| `deck` | 1 | 160 × 160 × 24 | Flat side down. Carries the spigot, the stop post and the switch wall |
+| `cap` | 1 | 34 × 34 × 2.4 | Retains the bearing's inner race |
+| `ring` | 1 | 160 × 160 × 22.5 | Belt cover, flange down |
+| `turntable` | 1 | 124 × 124 × 25 | Disc down, pulley up. Slow outer walls help the teeth |
+| `retainer` | 1 | 56.5 × 56 × 19.2 | Flange down. Holds the outer race |
+| `arm_servo`, `arm_idle` | 1 each | 54 × 74 × 17 | Flat, inner face down |
+| `cover_servo`, `cover_idle` | 1 each | 56 × 75 × 25 | Outer face down. Mirror images of each other |
+| `turntable_cover` | 1 | 122 × 83.2 × 9 | Top face down |
+| `trunnion` | 1 | 17 × 17 × 20.5 | Flange down. Hollow tilt axle that the head harness runs through |
+| `head_rear` | 1 | 71 × 80 × 50 | Standing on the seam, no supports. Use a brim |
+| `head_front` | 1 | 71 × 80 × 48.7 | Standing on the seam, no supports. Use a brim |
+| `iris` | 1 | 49.6 × 49.6 × 8.1 | White or translucent filament, front face down |
+| `bezel` | 1 | 58.3 × 58.3 × 6.5 | Dark filament, front face down |
+| `sled` | 1 | 66 × 73.5 × 5.5 | Pi Zero 2 tray |
+| `spacer` | 1 | 16 × 16 × 6.3 | Ring between the head and the idle arm |
+| `port_plug` | 1 | 16.2 × 16.2 × 5.2 | Closes the rail connector hole for now |
 
+The sizes are the bounding box of each STL as it lies on the bed (width × depth × height).
 Everything fits a 180 × 180 mm bed. PETG is the safer choice for the deck,
 turntable and arms; PLA is fine for the rest.
 
@@ -247,32 +249,17 @@ The mechanics have a wide margin, so tracking quality is set by the vision loop
 (frame rate and latency), not by the motor. The motor torque (0.2 N·m usable),
 fill factors and component masses are assumptions listed at the top of the script.
 
-## Component sizes
+## Check before printing
 
-The sizes of the bought parts that the printed parts are built around. All of
-them are parameters at the top of `cad/strix-print.scad`.
+Three sizes of bought parts have no datasheet figure. Measure them on your own
+parts; all are parameters at the top of `cad/strix-print.scad`.
 
-| Component | Size used in the model |
-|---|---|
-| Stepper motor (NEMA17, Ender 3 42-34) | Body 42.3 × 42.3 × 34 mm, M3 holes on a 31 mm square, Ø 22 mm boss, Ø 5 mm shaft 18 mm long |
-| Motor pulley | GT2, 20 teeth, middle of the teeth at least 12.2 mm above the motor's face * |
-| Belt | GT2 closed loop, 200 mm long, 6 mm wide |
-| Pan bearing (6806-2RS) | 30 × 42 × 7 mm |
-| Tilt servo (MG90S) | Body 22.8 × 12.4 mm, 32.3 mm across the ears, 21 mm from the ears to the bottom of the case, 7.4 mm to its top, shaft 4.1 mm long |
-| Tilt servo, shaft and screws | Shaft 6.1 mm from the end of the body *, ear screws 27.8 mm apart * |
-| Raspberry Pi Zero 2 W | 65 × 30 mm, M2.5 holes at 58 × 23 mm |
-| Raspberry Pi camera (Module 2 or 3) | 25 × 23.9 mm, M2 holes at 21 × 12.5 mm, lens level with the pair of holes nearer the connector |
-| Protoboard | 50 × 70 mm, M2 holes at 46.4 × 66 mm |
-| Homing switch (KW11-3Z) | About 20 × 10 × 6.4 mm, holes 9.5 mm apart |
-| Heat-set inserts | Hole Ø 4.0 mm for M3 and M2.5, Ø 3.2 mm for M2 |
-| Iris LEDs | Ø 5 mm |
-| DC jack, toggle switch | Panel holes Ø 8.2 mm * and Ø 6.2 mm * |
-| Rail connector (GX12) | Panel hole Ø 12.2 mm |
-| Antenna rod | Ø 3 mm |
-| Rubber feet | M4, on a 100 mm square |
-
-\* No datasheet gives this one: measure your part before printing. If the motor
-pulley sits higher than 12.2 mm, put washers between motor and deck (`motor_shim`).
+- **Motor pulley.** The middle of its teeth must sit at least 12.2 mm above the
+  motor's face. If it sits higher, put washers between motor and deck
+  (`motor_shim`). If it sits lower, the pan stage needs a change.
+- **Tilt servo.** The model assumes the shaft 6.1 mm from the end of the body and
+  the ear screws 27.8 mm apart.
+- **DC jack and toggle switch.** Panel holes of 8.2 and 6.2 mm are placeholders.
 
 Two things are not designed yet: the eye's two lids are fixed (no blinking
 mechanism), and the tilt trunnion is a printed tube in a printed hole, which will
