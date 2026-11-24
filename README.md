@@ -87,7 +87,7 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 
 | Parameter | Default | What it is |
 |---|---|---|
-| `ins_m3`, `ins_m25`, `ins_m2` | 4.0, 3.6, 3.2 mm | Heat-set insert hole diameters. They differ between brands: check your insert's datasheet |
+| `ins_m3`, `ins_m25`, `ins_m2` | 4.0, 4.0, 3.2 mm | Heat-set insert hole diameters. They differ between brands: check your insert's datasheet |
 | `brg_post_fit`, `brg_bore_fit` | −0.05, +0.10 mm | Bearing on the spigot and in the turntable |
 | `gt2_fit` | 0.05 mm | Opens the pulley tooth grooves |
 | `tol` | 0.2 mm | General sliding clearance |
@@ -247,47 +247,36 @@ The mechanics have a wide margin, so tracking quality is set by the vision loop
 (frame rate and latency), not by the motor. The motor torque (0.2 N·m usable),
 fill factors and component masses are assumptions listed at the top of the script.
 
-## Where the dimensions come from
+## Component sizes
 
-Nothing has been checked against a real part yet. Each bought component's
-dimensions were taken from the best drawing available; the ones without a
-drawing are the ones to measure before printing.
+The sizes of the bought parts that the printed parts are built around. All of
+them are parameters at the top of `cad/strix-print.scad`.
 
-**From the maker's own drawing**
+| Component | Size used in the model |
+|---|---|
+| Stepper motor (NEMA17, Ender 3 42-34) | Body 42.3 × 42.3 × 34 mm, M3 holes on a 31 mm square, Ø 22 mm boss, Ø 5 mm shaft 18 mm long |
+| Motor pulley | GT2, 20 teeth, middle of the teeth at least 12.2 mm above the motor's face * |
+| Belt | GT2 closed loop, 200 mm long, 6 mm wide |
+| Pan bearing (6806-2RS) | 30 × 42 × 7 mm |
+| Tilt servo (MG90S) | Body 22.8 × 12.4 mm, 32.3 mm across the ears, 21 mm from the ears to the bottom of the case, 7.4 mm to its top, shaft 4.1 mm long |
+| Tilt servo, shaft and screws | Shaft 6.1 mm from the end of the body *, ear screws 27.8 mm apart * |
+| Raspberry Pi Zero 2 W | 65 × 30 mm, M2.5 holes at 58 × 23 mm |
+| Raspberry Pi camera (Module 2 or 3) | 25 × 23.9 mm, M2 holes at 21 × 12.5 mm, lens level with the pair of holes nearer the connector |
+| Protoboard | 50 × 70 mm, M2 holes at 46.4 × 66 mm |
+| Homing switch (KW11-3Z) | About 20 × 10 × 6.4 mm, holes 9.5 mm apart |
+| Heat-set inserts | Hole Ø 4.0 mm for M3 and M2.5, Ø 3.2 mm for M2 |
+| Iris LEDs | Ø 5 mm |
+| DC jack, toggle switch | Panel holes Ø 8.2 mm * and Ø 6.2 mm * |
+| Rail connector (GX12) | Panel hole Ø 12.2 mm |
+| Antenna rod | Ø 3 mm |
+| Rubber feet | M4, on a 100 mm square |
 
-| Component | Used in the model | Source |
-|---|---|---|
-| Pi camera: hole pattern | 21 × 12.5 mm, Ø 2.2 | Raspberry Pi mechanical drawings, Camera Module 2 and 3 |
-| Pi camera: lens | level with the hole pair nearer the connector: 14.4 mm from the far edge, holes at 2.0 and 14.5 | same drawings |
-| Pi Zero 2 W | 65 × 30 mm, holes 58 × 23, camera connector on the short edge | Raspberry Pi mechanical drawing |
-| MG90S: body, ears, heights | 22.8 × 12.4 mm, 32.1–32.5 over the ears, 21 mm from ear to case bottom, 7.4 to case top, shaft 4.1 | TowerPro product table and datasheet drawing |
+\* No datasheet gives this one: measure your part before printing. If the motor
+pulley sits higher than 12.2 mm, put washers between motor and deck (`motor_shim`).
 
-**From vendor listings, which broadly agree**
-
-| Component | Used in the model | Note |
-|---|---|---|
-| Homing switch (KW11-3Z) | holes 9.5 mm apart, about 20 × 10 × 6.5 body | one listing gives Ø 2.35 holes |
-| Protoboard, 5 × 7 cm | corner holes 46.4 × 66 mm, Ø 2 | Adafruit's board; other makes may differ by a few tenths |
-| Heat-set inserts | 3.2 mm hole for M2, 4.0 for M2.5 and M3 | CNC Kitchen / ruthex figures as quoted by several guides; other brands use smaller holes. The `gauge` part settles it |
-| Ender 3 motor (42-34) | 42 × 42 × 34 mm body, 5 mm shaft, pressed-on 20-tooth pulley | listings give the shaft as 15 to 18 mm long |
-
-**No source found: measure these**
-
-- **Where the motor's pulley sits.** The belt runs 7.2 mm above the deck, so the
-  middle of the pulley's teeth must be at least 12.2 mm above the motor's face.
-  If yours sits higher, put washers between motor and deck (`motor_shim`). If it
-  sits lower, the pan stage does not line up and needs a change.
-- **MG90S shaft position and ear screws.** No drawing gives them. The model
-  assumes the shaft 6.1 mm from the end of the body and the screws 27.8 mm apart.
-- **DC jack and toggle switch.** Panel holes of 8.2 and 6.2 mm are placeholders:
-  these parts vary by model.
-
-**Design choices still open**
-
-- **Tilt trunnion.** A printed tube turning in a printed hole. Fine for a slow,
-  light axis, but it will have a little play.
-- **Eye shutters.** The two lids are fixed for now; the blinking mechanism is not
-  designed yet.
+Two things are not designed yet: the eye's two lids are fixed (no blinking
+mechanism), and the tilt trunnion is a printed tube in a printed hole, which will
+have a little play.
 
 ## Phases 2 and 3 (concept only)
 
