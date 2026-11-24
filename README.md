@@ -98,7 +98,7 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 |---|---|---|
 | M3 heat-set insert | 26 | Shell 10, turntable 9, arms 4, head 3 |
 | M2.5 heat-set insert | 4 | Pi Zero 2 sled |
-| M2 heat-set insert | 11 | Protoboard 4, camera 4, iris plate 3 |
+| M2 heat-set insert | 9 | Protoboard 4, camera 2, iris plate 3 |
 | M3 × 12 | 5 | Ring + deck into the shell |
 | M3 × 8 | 12 | Plate into the shell 5, retainer 3, arm covers 4 |
 | M3 × 16 countersunk | 2 | Turntable cover |
@@ -106,7 +106,7 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 | M3 × 20 | 2 | Head halves, driven from behind under the tail |
 | M3 × 6 | 1 | Head seam, top |
 | M2.5 × 5 | 4 | Pi Zero 2 |
-| M2 × 5 | 11 | Protoboard, camera, iris plate |
+| M2 × 5 | 9 | Protoboard, camera, iris plate |
 | M2 × 8 self-tapping | 3 | Spigot cap |
 | M2 × 10 self-tapping | 2 | Homing switch |
 | 6806-2RS bearing (30 × 42 × 7) | 1 | Pan |
@@ -237,9 +237,9 @@ python3 sim/dynamics.py
 | | |
 |---|---|
 | Head | 125 g, centre of mass 10 mm ahead of the tilt axis |
-| Rotating mass / whole robot | 312 g / about 1 kg |
-| Pan inertia | 6.2 × 10⁻⁴ kg·m² including the reflected rotor |
-| Pan acceleration available | about 73 000 °/s² (3 000 is plenty) |
+| Rotating mass / whole robot | 319 g / about 1 kg |
+| Pan inertia | 6.5 × 10⁻⁴ kg·m² including the reflected rotor |
+| Pan acceleration available | about 70 000 °/s² (3 000 is plenty) |
 | Tilt gravity torque, worst case | 14.6 mN·m against 180 mN·m of servo stall |
 | 90° move / 330° unwind | 0.37 s / 1.04 s at 360 °/s and 3 000 °/s² |
 
@@ -247,18 +247,43 @@ The mechanics have a wide margin, so tracking quality is set by the vision loop
 (frame rate and latency), not by the motor. The motor torque (0.2 N·m usable),
 fill factors and component masses are assumptions listed at the top of the script.
 
-## Known unknowns
+## Where the dimensions come from
 
-These are assumptions built into the printable parts. Check each against the
-part in your hand; all of them are parameters.
+Nothing has been checked against a real part yet. Each bought component's
+dimensions were taken from the best drawing available; the ones without a
+drawing are the ones to measure before printing.
 
-- **Motor pulley height.** The belt runs 11.4 mm above the deck. A press-fit
-  pulley may sit elsewhere on the shaft; shim the motor if so.
-- **Servo.** Body 22.8 × 12.2 mm, shaft 6 mm from the end, ear screws 27.8 mm apart.
-- **Camera.** Lens assumed 1.2 mm off the centre of its four holes, towards the
-  connector. The aperture is oversized to forgive about 1.5 mm.
-- **Homing switch.** A KW11-style lever switch with holes 9.5 mm apart.
-- **Protoboard.** 50 × 70 mm with holes 2 mm in from the edges.
+**From the maker's own drawing**
+
+| Component | Used in the model | Source |
+|---|---|---|
+| Pi camera: hole pattern | 21 × 12.5 mm, Ø 2.2 | Raspberry Pi mechanical drawings, Camera Module 2 and 3 |
+| Pi camera: lens | level with the hole pair nearer the connector: 14.4 mm from the far edge, holes at 2.0 and 14.5 | same drawings |
+| Pi Zero 2 W | 65 × 30 mm, holes 58 × 23, camera connector on the short edge | Raspberry Pi mechanical drawing |
+| MG90S: body, ears, heights | 22.8 × 12.4 mm, 32.1–32.5 over the ears, 21 mm from ear to case bottom, 7.4 to case top, shaft 4.1 | TowerPro product table and datasheet drawing |
+
+**From vendor listings, which broadly agree**
+
+| Component | Used in the model | Note |
+|---|---|---|
+| Homing switch (KW11-3Z) | holes 9.5 mm apart, about 20 × 10 × 6.5 body | one listing gives Ø 2.35 holes |
+| Protoboard, 5 × 7 cm | corner holes 46.4 × 66 mm, Ø 2 | Adafruit's board; other makes may differ by a few tenths |
+| Heat-set inserts | 3.2 mm hole for M2, 4.0 for M2.5 and M3 | CNC Kitchen / ruthex figures as quoted by several guides; other brands use smaller holes. The `gauge` part settles it |
+| Ender 3 motor (42-34) | 42 × 42 × 34 mm body, 5 mm shaft, pressed-on 20-tooth pulley | listings give the shaft as 15 to 18 mm long |
+
+**No source found: measure these**
+
+- **Where the motor's pulley sits.** The belt runs 7.2 mm above the deck, so the
+  middle of the pulley's teeth must be at least 12.2 mm above the motor's face.
+  If yours sits higher, put washers between motor and deck (`motor_shim`). If it
+  sits lower, the pan stage does not line up and needs a change.
+- **MG90S shaft position and ear screws.** No drawing gives them. The model
+  assumes the shaft 6.1 mm from the end of the body and the screws 27.8 mm apart.
+- **DC jack and toggle switch.** Panel holes of 8.2 and 6.2 mm are placeholders:
+  these parts vary by model.
+
+**Design choices still open**
+
 - **Tilt trunnion.** A printed tube turning in a printed hole. Fine for a slow,
   light axis, but it will have a little play.
 - **Eye shutters.** The two lids are fixed for now; the blinking mechanism is not

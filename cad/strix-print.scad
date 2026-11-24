@@ -28,7 +28,7 @@ as_built = false;      // true: emit a single part where it sits in the assembly
 /* [Fits - tune with the gauge part] */
 tol          = 0.2;          // general sliding clearance
 ins_m3       = [4.0, 6.2];   // heat-set insert: [hole diameter, hole depth]
-ins_m25      = [3.6, 5.2];
+ins_m25      = [4.0, 5.2];   // M2.5 and M3 share a 4.0 mm hole in the CNC Kitchen / ruthex tables; other brands go down to 3.4
 ins_m2       = [3.2, 4.5];
 clr_m3       = 3.4;          // clearance holes
 clr_m25      = 2.9;
@@ -53,7 +53,7 @@ dc_jack_d   = 8.2;                       // panel-mount DC jack
 switch_d    = 6.2;                       // panel-mount toggle switch
 rail_port_d = 12.2;                      // GX12 connector for the rail, plugged until then
 proto       = [50, 70];                  // protoboard carrying the Pico and the two drivers
-proto_inset = 2;                         // hole centres from the board edge
+proto_pitch = [46.4, 66];                // between its corner holes (Adafruit 5 x 7 cm board; M2)
 proto_pos   = [32, 0];
 proto_so    = 6;                         // standoff height
 
@@ -62,7 +62,10 @@ t_big    = 80;
 t_small  = 20;       // the pulley fitted to Ender 3 X/Y motors
 belt_len = 200;      // closed GT2 loop
 cable_d  = 18;       // bore through the hollow axis
-nema_w   = 42.3;  nema_len = 34;  nema_hole = 31;  shaft_len = 24;
+nema_w   = 42.3;  nema_len = 34;  nema_hole = 31;
+shaft_len = 18;      // Ender 3 42-34 listings say 15 to 18 mm; a catalogue NEMA17 has 24
+brg_z    = 2.8;      // the bearing sits this far above the deck: as low as it can, so the belt runs low
+motor_shim = 0;      // washers between motor and deck, to bring a pulley that sits higher down to the belt
 tt_d     = 124;      // turntable
 tt_t     = 6;
 stop_r   = 59.25;    // radius of the hard stop post and the lug that hits it
@@ -74,11 +77,14 @@ sw_hole_pitch = 9.5;
 tilt_h   = 62;       // tilt axis above the turntable
 arm_y    = 42;       // inner face of the arms
 arm_t    = 5;
-servo_len = 22.8;  servo_w = 12.2;        // MG90S / SG90 body
-servo_shaft_off = 6.0;                    // shaft axis to the near end of the body
-servo_ear_pitch = 27.8;                   // between the two ear screws
+servo_len = 22.8;  servo_w = 12.4;        // MG90S body (TowerPro: 22.8 x 12.4; the drawing says 22.5 x 12)
+servo_below = 21;                         // from the top face of the ears to the bottom of the case (TowerPro drawing; SG90: 19.5)
+servo_above = 7.4;                        // from the top face of the ears to the top of the case (28.4 - 21)
+servo_shaft = 4.1;                        // output shaft above the case (32.5 - 28.4)
+servo_shaft_off = 6.1;                    // shaft axis to the near end of the body: no drawing gives it; half the body width
+servo_ear_pitch = 27.8;                   // between the two ear screws: no drawing gives it either (ears are 32.1 to 32.5 overall)
 trunnion_d = 12;  trunnion_bore = 8;      // hollow trunnion on the idle side: the head harness runs through it
-cover_d = 21.5;                           // depth of the arm covers (clears the servo body)
+cover_d = 25;                             // depth of the arm covers: the servo stands 21 mm proud of the arm
 cap_h = 9;                                // height of the turntable cover
 
 /* [Head] */
@@ -98,7 +104,8 @@ sled_z = 14;  sled_t = 2;
 pi_holes = [58, 23];         // Raspberry Pi Zero 2 mounting pattern (M2.5)
 pi_pos_x = 3;
 cam_holes = [21, 12.5];      // Raspberry Pi camera v1/v2/3 mounting pattern (M2)
-cam_lens_off = 1.2;          // lens centre from the centroid of the 4 holes, towards the connector (measure yours)
+cam_lens_off = 6.15;         // lens centre from the centroid of the 4 holes, towards the connector. Official drawings of
+                             // Camera Module 2 and 3: holes 2.0 and 14.5 mm from the far edge, lens at 14.4 mm
 cam_connector_up = true;     // ribbon leaves upwards, straight back to the Pi
 led_d = 5.1;                 // iris LEDs sit in blind pockets behind a 0.8 mm skin
 
@@ -112,17 +119,19 @@ pan_c = (K + sqrt(K * K - 2 * pow(d_big - d_small, 2))) / 4;
 z_deck = plate_t + shell_h;
 zd     = z_deck + deck_t;
 z_tt   = zd + 20;
+zf     = zd + brg_z - 1.8;       // underside of the turntable pulley's lower flange
+belt_z = zd + brg_z + 4.4;       // middle of the belt
+pulley_mid = belt_z - z_deck;    // what the motor pulley's teeth must reach above the motor's face (with no shim)
 z_top  = z_tt + tt_t;
 z_tilt = z_top + tilt_h;
 tongue_x0 = hseam - tongue_len + 0.3;
-proto_holes = [for (sx = [-1, 1], sy = [-1, 1])
-    [proto_pos[0] + sx * (proto[0] / 2 - proto_inset), proto_pos[1] + sy * (proto[1] / 2 - proto_inset)]];
+proto_holes = [for (sx = [-1, 1], sy = [-1, 1]) [proto_pos[0] + sx * proto_pitch[0] / 2, proto_pos[1] + sy * proto_pitch[1] / 2]];
 pi_hole_xy = [for (sx = [-1, 1], sy = [-1, 1]) [pi_pos_x + sx * pi_holes[0] / 2, sy * pi_holes[1] / 2]];
 cam_cz = (cam_connector_up ? -1 : 1) * cam_lens_off;      // hole centroid relative to the eye axis
 cam_hole_yz = [for (sy = [-1, 1], sz = [-1, 1]) [sy * cam_holes[0] / 2, cam_cz + sz * cam_holes[1] / 2]];
 lug_angles = [30, 150, 270];
 lug_r = 22.6;
-led_angles = [0, 60, 120, 180, 240, 300];
+led_angles = [0, 55, 125, 180, 235, 305];   // clear of the ribbon above and of the camera's pegs below
 
 echo(str("pan centre distance ", pan_c, " mm, ratio ", t_big / t_small, ":1, tilt axis at ", z_tilt + foot_h, " mm"));
 
@@ -205,13 +214,13 @@ module deck() {
     difference() {
         union() {
             translate([0, 0, z_deck]) cylinder(d = base_d, h = deck_t);
-            translate([0, 0, zd]) cylinder(d = brg[0] + 4, h = 7);                        // shoulder under the inner race
-            translate([0, 0, zd]) cylinder(d = brg[0] + brg_post_fit, h = 7 + brg[2]);    // post
+            translate([0, 0, zd]) cylinder(d = brg[0] + 4, h = brg_z);                    // shoulder under the inner race
+            translate([0, 0, zd]) cylinder(d = brg[0] + brg_post_fit, h = brg_z + brg[2]);    // post
             translate([stop_r, 0, zd]) cylinder(d = 7, h = 19, $fn = 32);                 // hard stop
             rotate(sw_angle) translate([63.2, -11, zd]) cube([4, 22, 13]);                // switch wall
         }
         translate([0, 0, z_deck - 1]) cylinder(d = cable_d, h = 40);
-        for (a = [90, 210, 330]) rotate(a) translate([12, 0, zd + 7 + brg[2] - 8]) hole(pilot_m2, 9);
+        for (a = [90, 210, 330]) rotate(a) translate([12, 0, zd + brg_z + brg[2] - 8]) hole(pilot_m2, 9);
         // NEMA17 on slots: slide the motor away from the axis to tension the belt
         translate([-pan_c, 0, z_deck - 1]) {
             hull() for (dx = [-4, 3]) translate([dx, 0, 0]) cylinder(d = 22.8, h = deck_t + 2);
@@ -224,7 +233,7 @@ module deck() {
 }
 
 module cap() {
-    translate([0, 0, zd + 7 + brg[2]]) difference() {
+    translate([0, 0, zd + brg_z + brg[2]]) difference() {
         cylinder(d = brg[0] + 4, h = 2.4);
         translate([0, 0, -1]) cylinder(d = cable_d, h = 5);
         for (a = [90, 210, 330]) rotate(a) translate([12, 0, -1]) hole(clr_m2, 5);
@@ -253,14 +262,14 @@ module ring() {
 module turntable() {
     difference() {
         union() {
-            translate([0, 0, zd + 5.2]) cylinder(d = od_big + 3.5, h = 1.3);
-            translate([0, 0, zd + 6.5]) cylinder(d1 = od_big + 3.5, d2 = od_big, h = 1.75);
-            translate([0, 0, zd + 7.5]) linear_extrude(7.2) gt2_2d(t_big);
-            translate([0, 0, zd + 14.5]) cylinder(d = od_big + 3.5, h = z_tt - zd - 14.5);
+            translate([0, 0, zf]) cylinder(d = od_big + 3.5, h = 1.3);                    // flange and lip, 1 mm above the deck
+            translate([0, 0, zf + 1.3]) cylinder(d1 = od_big + 3.5, d2 = od_big, h = 1.75);
+            translate([0, 0, zf + 2.3]) linear_extrude(7.2) gt2_2d(t_big);
+            translate([0, 0, zf + 9.3]) cylinder(d = od_big + 3.5, h = z_tt - zf - 9.3);
             translate([0, 0, z_tt]) cylinder(d = tt_d, h = tt_t);
             rotate(180) translate([stop_r - 2.75, -3, zd + 14]) cube([5.5, 6, 6.5]);      // lug that meets the stop post
         }
-        translate([0, 0, zd + 7]) cylinder(d = brg[1] + brg_bore_fit, h = 40);             // bearing pocket
+        translate([0, 0, zd + brg_z]) cylinder(d = brg[1] + brg_bore_fit, h = 60);         // bearing pocket
         translate([0, 0, zd]) cylinder(d = brg[1] - 3.6, h = 10);                           // lip under the outer race
         for (a = [60, 180, 300]) rotate(a) translate([26.5, 0, z_top]) ins_down([ins_m3[0], tt_t + 0.5]);
         for (sx = [-1, 1], sy = [-1, 1]) translate([sx * 16, sy * (arm_y + arm_t + 6), z_top]) ins_down([ins_m3[0], tt_t + 1]);
@@ -275,7 +284,7 @@ module turntable() {
 module retainer() {
     difference() {
         union() {
-            translate([0, 0, zd + 7 + brg[2] + 0.05]) cylinder(d = brg[1] - 0.3, h = z_top - (zd + 7 + brg[2]));
+            translate([0, 0, zd + brg_z + brg[2] + 0.05]) cylinder(d = brg[1] - 0.3, h = z_top - (zd + brg_z + brg[2]));
             translate([0, 0, z_top]) linear_extrude(3) hull() {
                 circle(d = 50);
                 for (a = [60, 180, 300]) rotate(a) translate([26.5, 0]) circle(d = 10);
@@ -478,11 +487,15 @@ module iris() {
     eye_frame(hx1) difference() {
         union() {
             cylinder(d = eye_d - 0.4, h = 2);
-            for (p = cam_hole_yz) translate([p[0], p[1] , -4.5]) cylinder(d = 6.4, h = 4.5, $fn = 32);
+            for (p = cam_hole_yz) {
+                if (abs(p[1]) < 3) translate([p[0], p[1], -4.5]) cylinder(d = 6.4, h = 4.5, $fn = 32);          // screw posts, level with the lens
+                else { translate([p[0], p[1], -4.5]) cylinder(d = 3.6, h = 4.5, $fn = 32);                      // pegs for the far pair: slim, to leave room
+                       translate([p[0], p[1], -6.1]) cylinder(d = 1.9, h = 1.7, $fn = 24); }                    // for the LEDs beside them
+            }
         }
         translate([0, 0, -1]) cylinder(d = 11, h = 4);                                                       // lens
         translate([0, 0, 1.2]) cylinder(d1 = 11, d2 = 13, h = 0.81);
-        for (p = cam_hole_yz) translate([p[0], p[1], -4.5]) ins(ins_m2);
+        for (p = cam_hole_yz) if (abs(p[1]) < 3) translate([p[0], p[1], -4.5]) ins(ins_m2);
         for (a = lug_angles) rotate(a) translate([lug_r, 0, -1]) hole(clr_m2, 4);
         for (a = led_angles) rotate(a) translate([21, 0, -0.01]) hole(led_d, 1.21);
     }
@@ -506,7 +519,7 @@ module sled() {
         union() {
             intersection() { translate([-30, -100, sled_z]) cube([32, 200, sled_t]); pod(hwall + 0.3); }
             intersection() { translate([2, -100, sled_z]) cube([34, 200, sled_t]); pod(lip_t + 2.4 + 0.3); }
-            for (p = pi_hole_xy) translate([p[0], p[1], sled_z + sled_t]) cylinder(d = 6.2, h = 3.5, $fn = 32);
+            for (p = pi_hole_xy) translate([p[0], p[1], sled_z + sled_t]) cylinder(d = 7, h = 3.5, $fn = 32);
         }
         for (p = pi_hole_xy) translate([p[0], p[1], sled_z + sled_t + 3.5]) ins_down(ins_m25);
         translate([-18, -7, sled_z - 1]) cube([42, 14, sled_t + 2]);                                         // cables and weight
@@ -544,25 +557,24 @@ module gauge() {
 }
 
 // ============================== VITAMINS ==============================
-module v_nema() translate([-pan_c, 0, z_deck]) {
+module v_nema() translate([-pan_c, 0, z_deck - motor_shim]) {
     color(C_BLACK) translate([-nema_w / 2, -nema_w / 2, -nema_len]) cube([nema_w, nema_w, nema_len]);
     color(C_METAL) cylinder(d = 22, h = 2);
     color(C_METAL) cylinder(d = 5, h = shaft_len);
-    color(C_METAL) translate([0, 0, deck_t + 0.5]) cylinder(d = 14, h = 7);
-    color(C_METAL) translate([0, 0, deck_t + 7.5]) cylinder(d = gt2_od(t_small), h = 7.5);
-    color(C_METAL) for (z = [7.5, 15]) translate([0, 0, deck_t + z]) cylinder(d = 15, h = 1);
+    color(C_METAL) translate([0, 0, pulley_mid + motor_shim - 3.5]) cylinder(d = gt2_od(t_small), h = 7);        // pressed-on 20T pulley
+    color(C_METAL) for (z = [-4.5, 3.5]) translate([0, 0, pulley_mid + motor_shim + z]) cylinder(d = 15, h = 1);
 }
-module v_belt() color(C_BLACK) translate([0, 0, zd + 8.4]) linear_extrude(6) difference() {
+module v_belt() color(C_BLACK) translate([0, 0, belt_z - 3]) linear_extrude(6) difference() {
     hull() { circle(d = d_big + 1.6); translate([-pan_c, 0]) circle(d = d_small + 1.6); }
     hull() { circle(d = d_big - 1.0); translate([-pan_c, 0]) circle(d = d_small - 1.0); }
 }
-module v_bearing() color(C_METAL) translate([0, 0, zd + 7]) tube(brg[1], brg[0], brg[2]);
+module v_bearing() color(C_METAL) translate([0, 0, zd + brg_z]) tube(brg[1], brg[0], brg[2]);
+// the servo hangs outside the arm by its ears; its top end and shaft reach through the window towards the head
 module v_servo() color("#2a5db0") translate([servo_shaft_off - servo_len, arm_y + arm_t, z_tilt - servo_w / 2]) {
-    cube([servo_len, 18.4, servo_w]);
-    translate([-4.75, 0, 0]) cube([32.3, 2.5, servo_w]);
-    translate([0, -4.6, 0]) cube([servo_len, 4.6, servo_w]);
-    translate([servo_len - servo_shaft_off, -4.6, servo_w / 2]) rotate([90, 0, 0]) cylinder(d = 11.5, h = 4, $fn = 32);
-    translate([servo_len - servo_shaft_off, -8.6, servo_w / 2]) rotate([90, 0, 0]) cylinder(d = 4.8, h = 3.2, $fn = 32);
+    cube([servo_len, servo_below, servo_w]);
+    translate([-(32.3 - servo_len) / 2, 0, 0]) cube([32.3, 2.5, servo_w]);
+    translate([0, -servo_above, 0]) cube([servo_len, servo_above, servo_w]);
+    translate([servo_len - servo_shaft_off, -servo_above, servo_w / 2]) rotate([90, 0, 0]) cylinder(d = 4.8, h = servo_shaft, $fn = 32);
 }
 module v_switch() color("#c0392b") rotate(sw_angle) translate([56.8, -10, zd + 2.3]) cube([6.4, 20, 10.2]);
 module v_proto() {
@@ -572,7 +584,7 @@ module v_proto() {
 }
 module v_pi() color(C_PCB) translate([pi_pos_x - 32.5, -15, sled_z + sled_t + 3.5]) cube([65, 30, 1.6]);
 module v_camera() eye_frame(hx1) color(C_PCB) {
-    translate([-12.5, cam_cz + (cam_connector_up ? -(9.46 - 1.2) - 0 : -(14.4 + 1.2)) , -5.6]) cube([25, 23.86, 1.1]);
+    translate([-12.5, cam_connector_up ? -14.4 : -9.462, -5.6]) cube([25, 23.862, 1.1]);     // lens 9.462 mm from the connector edge
     color(C_BLACK) translate([-4, -4, -4.5]) cube([8, 8, 5]);
 }
 
@@ -646,7 +658,7 @@ else if (part == "assembly") {
 else if (part == "plate")      plate();
 else if (part == "shell")      translate([0, 0, -plate_t]) shell();
 else if (part == "deck")       translate([0, 0, -z_deck]) deck();
-else if (part == "cap")        translate([0, 0, -(zd + 7 + brg[2])]) cap();
+else if (part == "cap")        translate([0, 0, -(zd + brg_z + brg[2])]) cap();
 else if (part == "ring")       translate([0, 0, -zd]) ring();
 else if (part == "turntable")  rotate([180, 0, 0]) translate([0, 0, -z_top]) turntable();
 else if (part == "retainer")   rotate([180, 0, 0]) translate([0, 0, -(z_top + 3)]) retainer();
@@ -672,5 +684,5 @@ else if (part == "x_iris")       intersection() { head_front(); iris(); }
 else if (part == "x_tt_deck")    intersection() { union() { turntable(); arm_cover(true); arm_cover(false); turntable_cover(); } union() { deck(); ring(); v_nema(); v_switch(); } }
 else if (part == "x_covers")     intersection() { union() { arm_cover(true); arm_cover(false); turntable_cover(); } union() { arm(true); arm(false); turntable(); retainer(); v_servo(); } }
 else if (part == "x_trunnion")   intersection() { union() { trunnion(); spacer(); } union() { arm(false); head_rear(); sled(); } }
-else if (part == "x_yoke_head")  intersection() { union() { arm(true); arm(false); turntable(); retainer(); arm_cover(true); arm_cover(false); turntable_cover(); }
+else if (part == "x_yoke_head")  intersection() { union() { arm(true); arm(false); turntable(); retainer(); arm_cover(true); arm_cover(false); turntable_cover(); v_servo(); }
                                                   translate([0, 0, z_tilt]) rotate([0, -tilt, 0]) union() { head_rear(); head_front(); bezel(); } }
