@@ -33,14 +33,14 @@ Z_TILT = 142.0             # tilt axis above the underside of the plate (mm)
 HEAD_POINTS = {"Pi Zero 2": (0.011, 3, 0, 21), "camera": (0.003, 42, 0, 6),
                "LEDs and wiring": (0.006, 38, 0, 6), "inserts and screws": (0.008, 5, 0, -12),
                "antenna rod": (0.0035, -14, 0, 65)}
-PAN_POINTS = {"tilt servo": (0.0134, -5, 56, Z_TILT), "bearing (rotating half)": (0.013, 0, 0, 64.5),
+PAN_POINTS = {"tilt servo": (0.009, -5, 56, Z_TILT), "bearing (rotating half)": (0.013, 0, 0, 64.5),
               "screws and inserts": (0.010, 0, 0, 80)}
-MOTOR_MASS = 0.28          # NEMA17 42-34
-ROTOR_INERTIA = 5.4e-6     # kg m2, typical for a 34 mm NEMA17
+MOTOR_MASS = 0.28          # NEMA17 42-40 (17HS4401 type)
+ROTOR_INERTIA = 5.4e-6     # kg m2 (54 g cm2, 17HS4401)
 MOTOR_TORQUE = 0.20        # N m usable at low speed (well under the ~0.4 N m holding torque)
 RATIO = 4.0
-SERVO_STALL = 0.18         # N m, MG90S at 4.8 V (1.8 kg cm)
-SERVO_SPEED = 600.0        # deg/s unloaded (0.10 s / 60 deg)
+SERVO_STALL = 0.147        # N m, TS90A at 4.8 V (1.5 kg cm)
+SERVO_SPEED = 500.0        # deg/s unloaded (0.12 s / 60 deg)
 BELT_TENSION = 35.0        # N, comfortable working tension for 6 mm GT2
 PULLEY_PITCH_R = 80 * 2 / math.pi / 2 / 1000   # m
 G = 9.81

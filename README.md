@@ -18,7 +18,7 @@ payload (camera, sensors, foam-dart launcher) and a base that is ready to ride a
 | Height | 188 mm to the top of the head, plus the antenna |
 | Base | Ø 160 mm |
 | Pan | ±165° between a hard stop, NEMA17 + GT2 belt, 4:1 reduction |
-| Tilt | −15° … +35°, MG90S servo |
+| Tilt | −15° … +35°, TS90A micro servo (SG90 size) |
 | Brain | Raspberry Pi Zero 2 and Pi camera in the head, Raspberry Pi Pico in the base |
 | Rail (planned) | 2040 V-slot extrusion, 600 mm → ~400 mm of travel |
 
@@ -52,7 +52,7 @@ leaves room for a slip ring if continuous rotation is wanted later.
 
 | Part | Qty | Size as printed (mm) | Notes |
 |---|---|---|---|
-| `gauge` | 1 | 69 × 125 × 9 | **Print first.** Insert holes at −0.2 / nominal / +0.2 and the two bearing fits |
+| `gauge` | 1 | 87 × 125 × 9 | **Print first.** Insert holes at −0.2 / nominal / +0.2, the two bearing fits and the servo window (the notch marks the shaft) |
 | `plate` | 1 | 160 × 160 × 10 | Standoffs for a 50 × 70 mm protoboard, rim and zip-tie slots for the buck converter |
 | `shell` | 1 | 160 × 160 × 46 | Holes for a DC jack, a toggle switch and the future rail connector |
 | `deck` | 1 | 160 × 160 × 24 | Flat side down. Carries the spigot, the stop post and the switch wall |
@@ -71,9 +71,10 @@ leaves room for a slip ring if continuous rotation is wanted later.
 | `sled` | 1 | 66 × 73.5 × 5.5 | Pi Zero 2 tray |
 | `spacer` | 1 | 16 × 16 × 6.3 | Ring between the head and the idle arm |
 | `port_plug` | 1 | 16.2 × 16.2 × 5.2 | Closes the rail connector hole for now |
+| `motor_spacer` | 1 | 42.3 × 42.3 × 2 | Between the motor and the deck, so a stock pulley meets the belt |
 
 The sizes are the bounding box of each STL as it lies on the bed (width × depth × height).
-Everything fits a 180 × 180 mm bed. PETG is the safer choice for the deck,
+Everything fits a 180 × 180 mm bed (a Bambu Lab P1P has 256 mm). PETG is the safer choice for the deck,
 turntable and arms; PLA is fine for the rest.
 
 Re-export after changing a parameter:
@@ -104,7 +105,8 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 | M3 × 12 | 5 | Ring + deck into the shell |
 | M3 × 8 | 12 | Plate into the shell 5, retainer 3, arm covers 4 |
 | M3 × 16 countersunk | 2 | Turntable cover |
-| M3 × 10 | 8 | Motor 4 (with washers), arms 4 |
+| M3 × 12 | 4 | Motor, through the deck and the spacer |
+| M3 × 10 | 4 | Arms |
 | M3 × 20 | 2 | Head halves, driven from behind under the tail |
 | M3 × 6 | 1 | Head seam, top |
 | M2.5 × 5 | 4 | Pi Zero 2 |
@@ -113,9 +115,9 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 | M2 × 10 self-tapping | 2 | Homing switch |
 | 6806-2RS bearing (30 × 42 × 7) | 1 | Pan |
 | GT2 closed belt, 200 mm, 6 mm wide | 1 | Pan |
-| GT2 20-tooth pulley, 5 mm bore | 1 | On the motor (Ender 3 X/Y motors already have one) |
-| NEMA17 stepper, up to 34 mm long | 1 | Pan |
-| MG90S servo | 1 | Tilt. Uses its own two screws and a straight two-arm horn |
+| GT2 20-tooth pulley, 5 mm bore, 6 mm belt, 16 mm long | 1 | On the motor, hub down |
+| NEMA17 stepper, 34 to 40 mm long, 24 mm shaft (17HS4401 type) | 1 | Pan. A 48 mm body hits the plate |
+| TS90A micro servo (or SG90 / MG90S) | 1 | Tilt. Uses its own two screws and a straight two-arm horn |
 | Lever microswitch (KW11 type) | 1 | Pan homing |
 | 5 mm LED | 6 | Iris |
 | 3 mm rod, about 60 mm | 1 | Antenna |
@@ -160,8 +162,8 @@ The fit parameters sit at the top of `cad/strix-print.scad`:
 | 2 × stepper driver (TMC2209 or A4988) | Base | Pan and rail motors |
 | 12–24 V supply + 5 V buck (~3 A) | Base | Motors on the high rail; Pi, Pico and servos on 5 V |
 
-The stepper motors from an Ender 3 (NEMA17 42-34 with a 20-tooth pulley) work as
-they are for both the pan drive and the rail.
+Both steppers are ordinary NEMA17s (42-40, 17HS4401 type) with a stock 20-tooth GT2
+pulley.
 
 ## Wiring
 
@@ -239,10 +241,10 @@ python3 sim/dynamics.py
 | | |
 |---|---|
 | Head | 125 g, centre of mass 10 mm ahead of the tilt axis |
-| Rotating mass / whole robot | 319 g / about 1 kg |
-| Pan inertia | 6.5 × 10⁻⁴ kg·m² including the reflected rotor |
+| Rotating mass / whole robot | 314 g / about 1 kg |
+| Pan inertia | 6.4 × 10⁻⁴ kg·m² including the reflected rotor |
 | Pan acceleration available | about 70 000 °/s² (3 000 is plenty) |
-| Tilt gravity torque, worst case | 14.6 mN·m against 180 mN·m of servo stall |
+| Tilt gravity torque, worst case | 14.5 mN·m against 147 mN·m of servo stall |
 | 90° move / 330° unwind | 0.37 s / 1.04 s at 360 °/s and 3 000 °/s² |
 
 The mechanics have a wide margin, so tracking quality is set by the vision loop
@@ -251,15 +253,17 @@ fill factors and component masses are assumptions listed at the top of the scrip
 
 ## Check before printing
 
-Three sizes of bought parts have no datasheet figure. Measure them on your own
-parts; all are parameters at the top of `cad/strix-print.scad`.
+The bought parts are standard and the model uses their usual sizes: a DC-022B
+5.5 × 2.1 jack (M8, 8.2 mm hole), an MTS-102 mini toggle (M6, 6.2 mm), a GX12
+(12.2 mm), a 5 × 7 cm protoboard with corner holes 46.4 × 66 mm apart, an LM2596
+buck module (43 × 21 mm) and a KW11 microswitch (holes 9.5 mm apart).
 
-- **Motor pulley.** The middle of its teeth must sit at least 12.2 mm above the
-  motor's face. If it sits higher, put washers between motor and deck
-  (`motor_shim`). If it sits lower, the pan stage needs a change.
-- **Tilt servo.** The model assumes the shaft 6.1 mm from the end of the body and
-  the ear screws 27.8 mm apart.
-- **DC jack and toggle switch.** Panel holes of 8.2 and 6.2 mm are placeholders.
+- **Motor pulley.** Slide it down the shaft, hub first, until the middle of its
+  teeth is 14.2 mm above the motor's face (the belt's middle, with the 2 mm spacer).
+- **Tilt servo.** No drawing gives where a micro servo's shaft and ear screws sit.
+  The model assumes the shaft 6.1 mm from the end of the body and the ear screws
+  27.8 mm apart; measure them on the servo (`servo_shaft_off`, `servo_ear_pitch`)
+  before printing the arms and the head, or try the servo in the gauge's window.
 
 Two things are not designed yet: the eye's two lids are fixed (no blinking
 mechanism), and the tilt trunnion is a printed tube in a printed hole, which will

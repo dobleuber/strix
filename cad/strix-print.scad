@@ -17,7 +17,7 @@
 $fn = 96;
 
 /* [What to show] */
-part    = "assembly";  // assembly | plate | shell | deck | cap | turntable | retainer | ring | arm_servo | arm_idle | cover_servo | cover_idle | turntable_cover | head_rear | head_front | trunnion | iris | bezel | sled | spacer | port_plug | gauge
+part    = "assembly";  // assembly | plate | shell | deck | cap | turntable | retainer | ring | arm_servo | arm_idle | cover_servo | cover_idle | turntable_cover | head_rear | head_front | trunnion | iris | bezel | sled | spacer | port_plug | motor_spacer | gauge
 pan     = 0;
 tilt    = 0;
 cutaway = false;       // section through the assembly
@@ -59,13 +59,14 @@ proto_so    = 6;                         // standoff height
 
 /* [Pan drive] */
 t_big    = 80;
-t_small  = 20;       // the pulley fitted to Ender 3 X/Y motors
+t_small  = 20;       // stock GT2 20T pulley, 5 mm bore, 16 mm long, mounted hub down
 belt_len = 200;      // closed GT2 loop
 cable_d  = 18;       // bore through the hollow axis
-nema_w   = 42.3;  nema_len = 34;  nema_hole = 31;
-shaft_len = 18;      // Ender 3 42-34 listings say 15 to 18 mm; a catalogue NEMA17 has 24
+nema_w   = 42.3;  nema_len = 40;  nema_hole = 31;
+shaft_len = 24;      // catalogue NEMA17 shaft, from the mounting face
 brg_z    = 2.8;      // the bearing sits this far above the deck: as low as it can, so the belt runs low
-motor_shim = 0;      // washers between motor and deck, to bring a pulley that sits higher down to the belt
+motor_shim = 2;      // printed motor_spacer: a stock pulley mounted hub down cannot sit lower than its teeth at ~14 mm
+nema_len_max = 40;   // longest motor body that clears the plate (with the spacer)
 tt_d     = 124;      // turntable
 tt_t     = 6;
 stop_r   = 59.25;    // radius of the hard stop post and the lug that hits it
@@ -77,7 +78,7 @@ sw_hole_pitch = 9.5;
 tilt_h   = 62;       // tilt axis above the turntable
 arm_y    = 42;       // inner face of the arms
 arm_t    = 5;
-servo_len = 22.8;  servo_w = 12.4;        // MG90S body (TowerPro: 22.8 x 12.4; the drawing says 22.5 x 12)
+servo_len = 23.0;  servo_w = 12.4;        // TS90A / SG90 / MG90S body: listings give 22.5 to 23 x 12 to 12.4
 servo_below = 21;                         // from the top face of the ears to the bottom of the case (TowerPro drawing; SG90: 19.5)
 servo_above = 7.4;                        // from the top face of the ears to the top of the case (28.4 - 21)
 servo_shaft = 4.1;                        // output shaft above the case (32.5 - 28.4)
@@ -121,7 +122,7 @@ zd     = z_deck + deck_t;
 z_tt   = zd + 20;
 zf     = zd + brg_z - 1.8;       // underside of the turntable pulley's lower flange
 belt_z = zd + brg_z + 4.4;       // middle of the belt
-pulley_mid = belt_z - z_deck;    // what the motor pulley's teeth must reach above the motor's face (with no shim)
+pulley_mid = belt_z - z_deck;    // height of the belt's middle above the deck's underside
 z_top  = z_tt + tt_t;
 z_tilt = z_top + tilt_h;
 tongue_x0 = hseam - tongue_len + 0.3;
@@ -133,6 +134,7 @@ lug_angles = [30, 150, 270];
 lug_r = 22.6;
 led_angles = [0, 55, 125, 180, 235, 305];   // clear of the ribbon above and of the camera's pegs below
 
+echo(str("motor pulley teeth centre ", pulley_mid + motor_shim, " mm above the motor face; motor bottom ", z_deck - motor_shim - nema_len - plate_t, " mm above the plate"));
 echo(str("pan centre distance ", pan_c, " mm, ratio ", t_big / t_small, ":1, tilt axis at ", z_tilt + foot_h, " mm"));
 
 C_PRINT = "#e8792b";  C_DARK = "#3a3f47";  C_LIGHT = "#eceff2";
@@ -554,6 +556,24 @@ module gauge() {
     }
     translate([20, 50, 0]) { cylinder(d = brg[0] + 8, h = 2); cylinder(d = brg[0] + brg_post_fit, h = 2 + brg[2]); }
     translate([20, 100, 0]) difference() { cylinder(d = brg[1] + 8, h = 2 + brg[2]); translate([0, 0, 2]) cylinder(d = brg[1] + brg_bore_fit, h = 10); }
+    // the servo window of arm_servo: the servo must drop in and its ear screws meet the two holes;
+    // the notch marks where the model expects the shaft
+    translate([62, 56, 0]) difference() {
+        translate([-20, -11, 0]) cube([40, 22, arm_t]);
+        translate([-servo_len / 2 - tol, -servo_w / 2 - tol, -1]) cube([servo_len + 2 * tol, servo_w + 2 * tol, arm_t + 2]);
+        for (d = [-1, 1]) translate([d * servo_ear_pitch / 2, 0, -1]) hole(pilot_m2, arm_t + 2);
+        translate([servo_len / 2 - servo_shaft_off, 11, arm_t - 1]) rotate(45) cube(2, center = true);
+    }
+}
+
+// 2 mm plate between the motor and the deck: lowers the motor so a stock pulley's teeth meet the belt.
+// It slides with the motor when the belt is tensioned.
+module motor_spacer() {
+    difference() {
+        translate([-nema_w / 2, -nema_w / 2, 0]) cube([nema_w, nema_w, motor_shim]);
+        translate([0, 0, -1]) cylinder(d = 23, h = motor_shim + 2);
+        for (sx = [-1, 1], sy = [-1, 1]) translate([sx * nema_hole / 2, sy * nema_hole / 2, -1]) hole(clr_m3, motor_shim + 2);
+    }
 }
 
 // ============================== VITAMINS ==============================
@@ -561,8 +581,11 @@ module v_nema() translate([-pan_c, 0, z_deck - motor_shim]) {
     color(C_BLACK) translate([-nema_w / 2, -nema_w / 2, -nema_len]) cube([nema_w, nema_w, nema_len]);
     color(C_METAL) cylinder(d = 22, h = 2);
     color(C_METAL) cylinder(d = 5, h = shaft_len);
-    color(C_METAL) translate([0, 0, pulley_mid + motor_shim - 3.5]) cylinder(d = gt2_od(t_small), h = 7);        // pressed-on 20T pulley
-    color(C_METAL) for (z = [-4.5, 3.5]) translate([0, 0, pulley_mid + motor_shim + z]) cylinder(d = 15, h = 1);
+    // stock 20T pulley, hub down: 16 mm long, teeth centred 4.5 mm below its top
+    pm = pulley_mid + motor_shim;
+    color(C_METAL) translate([0, 0, pm - 3.5]) cylinder(d = gt2_od(t_small), h = 7);
+    color(C_METAL) for (z = [-4.5, 3.5]) translate([0, 0, pm + z]) cylinder(d = 16, h = 1);
+    color(C_METAL) translate([0, 0, pm + 4.5 - 16]) cylinder(d = 16, h = 7);
 }
 module v_belt() color(C_BLACK) translate([0, 0, belt_z - 3]) linear_extrude(6) difference() {
     hull() { circle(d = d_big + 1.6); translate([-pan_c, 0]) circle(d = d_small + 1.6); }
@@ -612,6 +635,7 @@ module assembly() {
     color(C_DARK) deck();
     color(C_DARK) cap();
     color(C_DARK) ring();
+    color(C_DARK) translate([-pan_c, 0, z_deck - motor_shim]) motor_spacer();
     v_nema(); v_belt(); v_bearing(); v_switch(); v_proto();
     if (show_cables) { v_harness_base(); v_lead_base(); }
     rotate(pan) {
@@ -647,6 +671,7 @@ module raw(p) {
     else if (p == "sled") sled();         else if (p == "spacer") spacer();
     else if (p == "cover_servo") arm_cover(true); else if (p == "cover_idle") arm_cover(false);
     else if (p == "turntable_cover") turntable_cover(); else if (p == "trunnion") trunnion();
+    else if (p == "motor_spacer") translate([-pan_c, 0, z_deck - motor_shim]) motor_spacer();
 }
 
 // ============================ PRINT POSES ============================
@@ -676,6 +701,7 @@ else if (part == "cover_idle")  translate([0, 0, arm_y + arm_t + cover_d]) rotat
 else if (part == "turntable_cover") rotate([180, 0, 0]) translate([0, 0, -(z_top + cap_h)]) turntable_cover();
 else if (part == "trunnion")   translate([0, 0, pad_idle_y + 8]) rotate([-90, 0, 0]) trunnion();
 else if (part == "gauge")      gauge();
+else if (part == "motor_spacer") motor_spacer();
 // interference probes: an empty result means the two parts do not touch
 else if (part == "x_head")       intersection() { head_rear(); head_front(); }
 else if (part == "x_sled_rear")  intersection() { head_rear(); sled(); }

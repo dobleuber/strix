@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PARTS=(plate shell deck cap ring turntable retainer arm_servo arm_idle cover_servo cover_idle turntable_cover
-       head_rear head_front trunnion iris bezel sled spacer port_plug gauge)
+       head_rear head_front trunnion iris bezel sled spacer port_plug motor_spacer gauge)
 [ $# -gt 0 ] && PARTS=("$@")
 mkdir -p stl
 for p in "${PARTS[@]}"; do
